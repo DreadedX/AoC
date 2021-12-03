@@ -34,7 +34,7 @@ func New(year int, day int) adventOfCode {
 
 func (aoc adventOfCode) Solution(f func(*bufio.Scanner) int) {
 	if len(aoc.testCases) == 0 {
-		fmt.("No testCases provided!\n")
+		fmt.Println("No testCases provided!")
 	}
 
 	failed := false
