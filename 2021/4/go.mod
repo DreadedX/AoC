@@ -1,4 +1,4 @@
-module AoC/2021/3
+module AoC/2021/4
 
 require AoC/2021/common v0.0.0
 

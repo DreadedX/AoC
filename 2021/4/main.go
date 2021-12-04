@@ -14,6 +14,7 @@ type Card struct {
 	column [5]int
 }
 
+// Remove empty entries
 func filter(in []string) []string {
 	n := 0
 	for _, s := range in {
@@ -74,23 +75,87 @@ func findLosing(numbers []int, cards []Card) (int, []int) {
 
 					if cards[j].row[row] == 5 || cards[j].column[column] == 5 {
 						hasWon = true
+
+						// If this is the last cardm then it is the one we are looking for
 						if len(cards) == 1 {
 							return n, cards[j].numbers
 						}
 					}
 				}
 			}
+			
+			// Keep the card if it has not won
 			if !hasWon {
 				cards[i] = cards[j]
 				i++
 			}
 		}
+
+		// Truncate the array of cards
 		cards = cards[:i]
 	}
 
 	fmt.Println("Failed to find a winner")
 
 	return -1, nil
+}
+
+func solution(selector func (number []int, cards []Card) (winning int, numbers []int)) (func (*bufio.Scanner) int) {
+	return func (input *bufio.Scanner) int {
+		// Read in the drawn numbers
+		input.Scan()
+		line := input.Text()
+		var numbers []int
+		for _, num := range strings.Split(line, ",") {
+			n, err := strconv.Atoi(num)
+			if err != nil {
+				panic(err)
+			}
+
+			numbers = append(numbers, n)
+		}
+
+		// Read in all the cards
+		var cards []Card
+		var rowNumber int
+		cardIndex := -1
+		for input.Scan() {
+			line = input.Text()
+
+			// A new line means that we start a new card
+			if len(line) == 0 {
+				card := Card{}
+				cards = append(cards, card)
+				rowNumber = 0
+				cardIndex++
+			} else {
+				row := filter(strings.Split(line, " "))
+
+				for _, num := range row {
+					n, err :=  strconv.Atoi(num)
+					if err != nil {
+						panic(err)
+					}
+					cards[cardIndex].numbers = append(cards[cardIndex].numbers, n)
+				}
+
+				rowNumber++
+			}
+		}
+
+		// Play bingo and find the desired card and winnnig number
+		winning, unmarked := selector(numbers, cards)
+
+		// Calculate the sum of unmarked numbers
+		sum := 0
+		for _, n  := range unmarked {
+			if n != -1 {
+				sum += n
+			}
+		}
+
+		return winning*sum
+	}
 }
 
 func main() {
@@ -118,109 +183,6 @@ func main() {
  2  0 12  3  7
 	`, []int{4512, 1924})
 
-	aoc.Solution(1, func (input *bufio.Scanner) int {
-		input.Scan()
-		line := input.Text()
-		var numbers []int
-		for _, num := range strings.Split(line, ",") {
-			n, err := strconv.Atoi(num)
-			if err != nil {
-				panic(err)
-			}
-
-			numbers = append(numbers, n)
-		}
-
-		var cards []Card
-		var rowNumber int
-		cardIndex := -1
-		for input.Scan() {
-			line = input.Text()
-
-			// A new line means that we start a new card
-			if len(line) == 0 {
-				card := Card{}
-				card.numbers = make([]int, 25)
-				cards = append(cards, card)
-				rowNumber = 0
-				cardIndex++
-			} else {
-				row := filter(strings.Split(line, " "))
-
-				for i, num := range row {
-					n, err :=  strconv.Atoi(num)
-					if err != nil {
-						panic(err)
-					}
-					cards[cardIndex].numbers[5*rowNumber + i] = n
-				}
-
-				rowNumber++
-			}
-		}
-
-		winning, unmarked := findWinner(numbers, cards)
-
-		sum := 0
-		for _, n  := range unmarked {
-			if n != -1 {
-				sum += n
-			}
-		}
-
-		return winning*sum
-	})
-
-	aoc.Solution(2, func (input *bufio.Scanner) int {
-		input.Scan()
-		line := input.Text()
-		var numbers []int
-		for _, num := range strings.Split(line, ",") {
-			n, err := strconv.Atoi(num)
-			if err != nil {
-				panic(err)
-			}
-
-			numbers = append(numbers, n)
-		}
-
-		var cards []Card
-		var rowNumber int
-		cardIndex := -1
-		for input.Scan() {
-			line = input.Text()
-
-			// A new line means that we start a new card
-			if len(line) == 0 {
-				card := Card{}
-				card.numbers = make([]int, 25)
-				cards = append(cards, card)
-				rowNumber = 0
-				cardIndex++
-			} else {
-				row := filter(strings.Split(line, " "))
-
-				for i, num := range row {
-					n, err :=  strconv.Atoi(num)
-					if err != nil {
-						panic(err)
-					}
-					cards[cardIndex].numbers[5*rowNumber + i] = n
-				}
-
-				rowNumber++
-			}
-		}
-
-		winning, unmarked := findLosing(numbers, cards)
-
-		sum := 0
-		for _, n  := range unmarked {
-			if n != -1 {
-				sum += n
-			}
-		}
-
-		return winning*sum
-	})
+	aoc.Solution(1, solution(findWinner))
+	aoc.Solution(2, solution(findLosing))
 }
