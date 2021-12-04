@@ -14,7 +14,7 @@ import (
 
 type testCase struct {
 	input string
-	result int
+	results []int
 }
 
 type adventOfCode struct {
@@ -24,7 +24,7 @@ type adventOfCode struct {
 }
 
 func New(year int, day int) adventOfCode {
-	err := godotenv.Load()
+	err := godotenv.Load("../../.env")
 	if err != nil {
 		fmt.Println("Failed to open .env")
 	}
@@ -32,7 +32,8 @@ func New(year int, day int) adventOfCode {
 	return adventOfCode{year, day, nil}
 }
 
-func (aoc adventOfCode) Solution(f func(*bufio.Scanner) int) {
+func (aoc adventOfCode) Solution(part int, f func(*bufio.Scanner) int) {
+	fmt.Printf("AoC %d - Day %d - Part %d\n", aoc.year, aoc.day, part)
 	if len(aoc.testCases) == 0 {
 		fmt.Println("No testCases provided!")
 	}
@@ -42,11 +43,11 @@ func (aoc adventOfCode) Solution(f func(*bufio.Scanner) int) {
 		input := bufio.NewScanner(strings.NewReader(testCase.input))
 		result := f(input)
 
-		if result != testCase.result {
-			fmt.Printf("Test %d failed, expected '%d', got '%d'\n", i+1, testCase.result, result)
+		if result != testCase.results[part-1] {
+			fmt.Printf("\tTest %d failed, expected '%d', got '%d'\n", i+1, testCase.results[part-1], result)
 			failed = true
 		} else {
-			fmt.Printf("Test %d passed!\n", i+1)
+			fmt.Printf("\tTest %d passed!\n", i+1)
 		}
 	}
 	if failed {
@@ -59,11 +60,11 @@ func (aoc adventOfCode) Solution(f func(*bufio.Scanner) int) {
 	}
 
 	result := f(input)
-	fmt.Printf("Solution: %d\n", result)
+	fmt.Printf("\tSolution:\n\t\t%d\n\n", result)
 }
 
-func (aoc *adventOfCode) Test(input string, result int) {
-	aoc.testCases = append(aoc.testCases, testCase{strings.TrimSpace(input), result})
+func (aoc *adventOfCode) Test(input string, results []int) {
+	aoc.testCases = append(aoc.testCases, testCase{strings.TrimSpace(input), results})
 }
 
 func (aoc adventOfCode) getInput() (*bufio.Scanner, error) {

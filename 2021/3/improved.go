@@ -7,11 +7,6 @@ import (
 	"strconv"
 )
 
-func main() {
-	part1()
-	part2()
-}
-
 func count(entries []string, width int) [2][]int {
 	counts := [2][]int{make([]int, width), make([]int, width)}
 
@@ -58,7 +53,7 @@ func process(input *bufio.Scanner) ([]string, int) {
 	return numbers, width
 }
 
-func part1() {
+func main() {
 	aoc := aoc.New(2021, 3)
 
 	aoc.Test(`
@@ -74,9 +69,9 @@ func part1() {
 11001
 00010
 01010
-	`, 198)
+	`, []int{198, 230})
 
-	aoc.Solution(func (input *bufio.Scanner) int {
+	aoc.Solution(1, func (input *bufio.Scanner) int {
 		entries, width := process(input)
 		counts := count(entries, width)
 
@@ -92,27 +87,8 @@ func part1() {
 
 		return gamma * epsilon
 	})
-}
 
-func part2() {
-	aoc := aoc.New(2021, 3)
-
-	aoc.Test(`
-00100
-11110
-10110
-10111
-10101
-01111
-00111
-11100
-10000
-11001
-00010
-01010
-	`, 230)
-
-	aoc.Solution(func (input *bufio.Scanner) int {
+	aoc.Solution(2, func (input *bufio.Scanner) int {
 		oxygen, width := process(input)
 		oxygenCounts := count(oxygen, width)
 
