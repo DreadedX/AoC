@@ -40,6 +40,11 @@ func (aoc adventOfCode) Solution(part int, f func(*bufio.Scanner) int) {
 
 	failed := false
 	for i, testCase := range aoc.testCases {
+		if testCase.results[part-1] == -2 {
+			fmt.Printf("\tTest %d skipped!\n", i+1)
+			continue
+		}
+
 		input := bufio.NewScanner(strings.NewReader(testCase.input))
 		result := f(input)
 
