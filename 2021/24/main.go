@@ -1,331 +1,130 @@
 package main
 
 import (
-	aoc "AoC/2021/common"
-	"bufio"
 	"fmt"
-	"strconv"
-	"strings"
 )
 
-type Operator byte
-const (
-	INP Operator = iota
-	ADD
-	ADDR
-	MUL
-	MULR
-	DIV
-	DIVR
-	MOD
-	MODR
-	EQL
-	EQLR
-)
+func step(w int, z int, a int, b int, pop bool) int {
+	temp := z
 
-func (op Operator) String() string {
-	switch op {
-	case INP:
-		return "INP"
-	case ADD, ADDR:
-		return "ADD"
-	case MUL, MULR:
-		return "MUL"
-	case DIV, DIVR:
-		return "DIV"
-	case MOD, MODR:
-		return "MOD"
-	case EQL, EQLR:
-		return "EQL"
-	default:
-		return fmt.Sprintf("%d", int(op))
-	}
-}
-
-type Instruction struct {
-	op Operator
-	a int
-	b int
-}
-
-func (i Instruction) String() string {
-	if i.op == INP {
-		return fmt.Sprintf("%v\t[%s]", i.op, registerToString(i.a))
+	if pop {
+		// Pop value from stack
+		z /= 26
 	}
 
-	if i.op % 2 == 0 {
-		return fmt.Sprintf("%v\t[%s],\t[%s]", i.op, registerToString(i.a), registerToString(i.b))
+	if (temp%26)+a != w {
+		// Push new value to stack
+		z *= 26
+		z += w + b
 	}
 
-	return fmt.Sprintf("%v\t[%s],\t %d", i.op, registerToString(i.a), i.b)
-}
-
-type Memory [4]int
-
-func (m Memory) String() string {
-	return fmt.Sprintf("w: %d, x: %d, y: %d, z: %d", m[0], m[1], m[2], m[3])
-}
-
-type Stream struct {
-	stream []int
-	counter int
-}
-
-func (s *Stream) Get() int {
-	if s.counter == len(s.stream) {
-		panic("End of stream reached")
-	}
-
-	val := s.stream[s.counter]
-	s.counter++
-	return val
-}
-
-func NewStream(input string) Stream {
-	var s Stream
-	s.stream = make([]int, len(input))
-
-	for i, b := range input {
-		n, err := strconv.Atoi(string(b))
-		if err != nil {
-			panic(err)
-		}
-
-		if n == 0 {
-			panic("0 is not a valid input")
-		}
-
-		s.stream[i] = n
-	}
-
-	return s
-}
-
-type Program []Instruction
-
-func (p Program) Execute(input string) Memory {
-	stream := NewStream(input)
-	var mem Memory
-
-	for _, i := range p {
-		switch i.op {
-		case INP:
-			mem[i.a] = stream.Get()
-		case ADD:
-			mem[i.a] += i.b
-		case ADDR:
-			mem[i.a] += mem[i.b]
-		case MUL:
-			mem[i.a] *= i.b
-		case MULR:
-			mem[i.a] *= mem[i.b]
-		case DIV:
-			mem[i.a] /= i.b
-		case DIVR:
-			mem[i.a] /= mem[i.b]
-		case MOD:
-			mem[i.a] %= i.b
-		case MODR:
-			mem[i.a] %= mem[i.b]
-		case EQL:
-			val := 0
-			if mem[i.a] == i.b {
-				val = 1
-			}
-			mem[i.a] = val
-		case EQLR:
-			val := 0
-			if mem[i.a] == mem[i.b] {
-				val = 1
-			}
-			mem[i.a] = val
-		default:
-			panic("Unknown operator")
-		}
-
-		// fmt.Println(mem)
-	}
-
-	return mem
-}
-
-func Compile(input *bufio.Scanner) Program {
-	var program Program
-
-	for input.Scan() {
-		line := input.Text()
-		inst := strings.Split(line, " ")
-
-		var instruction Instruction
-
-		// Parse the operator
-		switch inst[0] {
-		case "inp":
-			instruction.op = INP
-		case "add":
-			instruction.op = ADD
-		case "mul":
-			instruction.op = MUL
-		case "div":
-			instruction.op = DIV
-		case "mod":
-			instruction.op = MOD
-		case "eql":
-			instruction.op = EQL
-		default:
-			panic("Unknown instruction")
-		}
-
-		// Parse the first parameter, this is always a register
-		instruction.a = parseRegister(inst[1])
-
-		// All instructions, except INP, require a second parameter
-		if instruction.op != INP {
-			b := inst[2]
-			if val, err := strconv.Atoi(b); err == nil {
-				// If the parameter is a number we use that as the second parameter
-				instruction.b = val
-			} else {
-				// Otherwise the parameter is a register, so we parse it and set it to the register
-				instruction.b = parseRegister(b)
-				// We also increment the operator by one to indicate that the second parameter is a register
-				instruction.op++
-			}
-		}
-
-		program = append(program, instruction)
-	}
-
-	return program
-}
-
-func (p Program) Optimize() Program {
-	// previous := len(p)
-	for counter := 0; counter < 4; counter++ {
-		fmt.Printf("PRECOMP %d\n", counter)
-		p = p.precomp()
-
-		fmt.Printf("QUASI %d\n", counter)
-		p = p.quasi()
-
-		// if previous == len(p) {
-		// 	fmt.Println("Done optimizing")
-		// 	break
-		// }
-
-		// previous = len(p)
-	}
-
-	return p
+	return z
 }
 
 func main() {
-	challenge := aoc.New(2021, 24)
+	// for w1 := 1; w1 <= 9; w1++ {
+	// 	z1 := step(w1, 0, 14, 1, false)
+	// 	for w2 := 1; w2 <= 9; w2++ {
+	// 		z2 := step(w2, z1, 15, 7, false)
+	// 		for w3 := 1; w3 <= 9; w3++ {
+	// 			z3 := step(w3, z2, 15, 13, false)
+	// 			for w4 := 1; w4 <= 9; w4++ {
+	// 				z4 := step(w4, z3, -6, 10, true)
+	// 				for w5 := 1; w5 <= 9; w5++ {
+	// 					fmt.Println(w1, w2, w3, w4, w5)
+	// 					z5 := step(w5, z4, 14, 0, false)
+	// 					for w6 := 1; w6 <= 9; w6++ {
+	// 						z6 := step(w6, z5, -4, 13, true)
+	// 						for w7 := 1; w7 <= 9; w7++ {
+	// 							z7 := step(w7, z6, 15, 11, false)
+	// 							for w8 := 1; w8 <= 9; w8++ {
+	// 								z8 := step(w8, z7, 15, 6, false)
+	// 								for w9 := 1; w9 <= 9; w9++ {
+	// 									z9 := step(w9, z8, 11, 1, false)
+	// 									for w10 := 1; w10 <= 9; w10++ {
+	// 										z10 := step(w10, z9, 0, 7, true)
+	// 										for w11 := 1; w11 <= 9; w11++ {
+	// 											z11 := step(w11, z10, 0, 11, true)
+	// 											for w12 := 1; w12 <= 9; w12++ {
+	// 												z12 := step(w12, z11, -3, 14, true)
+	// 												for w13 := 1; w13 <= 9; w13++ {
+	// 													z13 := step(w13, z12, -9, 4, true)
 
-	// challenge.Test(`inp x
-// mul x -1`, []int{-1, -1})
+	// 													w14 := z13 - 9
+	// 													if w14 <= 0 || w14 > 9 {
+	// 														continue
+	// 													}
 
-	// challenge.Test(`inp z
-// inp x
-// mul z 3
-// eql z x`, []int{-1, -1})
+	// 													z14 := step(w14, z13, -9, 10, true)
 
-	// challenge.Test(`inp w
-// add z w
-// mod z 2
-// div w 2
-// add y w
-// mod y 2
-// div w 2
-// add x w
-// mod x 2
-// div w 2
-// mod w 2`, []int{-1, -1})
+	// 													if z14 == 0 {
+	// 														fmt.Println("SOLUTION FOUND:", w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14)
+	// 														return
+	// 													}
+	// 												}
+	// 											}
+	// 										}
+	// 									}
+	// 								}
+	// 							}
+	// 						}
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	challenge.Test(`inp w
-mul x 0
-add x z
-mod x 26
-div z 1
-add x 14
-eql x w
-eql x 0
-mul y 0
-add y 25
-mul y x
-add y 1
-mul z y
-mul y 0
-add y w
-add y 1
-mul y x
-add z y`, []int{-1, -1})
+	for w1 := 1; w1 <= 9; w1++ {
+		z1 := step(w1, 0, 14, 1, false)
+		for w2 := 1; w2 <= 9; w2++ {
+			z2 := step(w2, z1, 15, 7, false)
+			for w3 := 1; w3 <= 9; w3++ {
+				z3 := step(w3, z2, 15, 13, false)
+				for w4 := 1; w4 <= 9; w4++ {
+					z4 := step(w4, z3, -6, 10, true)
+					for w5 := 1; w5 <= 9; w5++ {
+						fmt.Println(w1, w2, w3, w4, w5)
+						z5 := step(w5, z4, 14, 0, false)
+						for w6 := 1; w6 <= 9; w6++ {
+							z6 := step(w6, z5, -4, 13, true)
+							for w7 := 1; w7 <= 9; w7++ {
+								z7 := step(w7, z6, 15, 11, false)
+								for w8 := 1; w8 <= 9; w8++ {
+									z8 := step(w8, z7, 15, 6, false)
+									for w9 := 1; w9 <= 9; w9++ {
+										z9 := step(w9, z8, 11, 1, false)
+										for w10 := 1; w10 <= 9; w10++ {
+											z10 := step(w10, z9, 0, 7, true)
+											for w11 := 1; w11 <= 9; w11++ {
+												z11 := step(w11, z10, 0, 11, true)
+												for w12 := 1; w12 <= 9; w12++ {
+													z12 := step(w12, z11, -3, 14, true)
+													for w13 := 1; w13 <= 9; w13++ {
+														z13 := step(w13, z12, -9, 4, true)
 
-	challenge.Test(`inp w
-mul x 0
-add x z
-mod x 26
-div z 1
-add x 14
-eql x w
-eql x 0
-mul y 0
-add y 25
-mul y x
-add y 1
-mul z y
-mul y 0
-add y w
-add y 1
-mul y x
-add z y
-inp w
-mul x 0
-add x z
-mod x 26
-div z 1
-add x 15
-eql x w
-eql x 0
-mul y 0
-add y 25
-mul y x
-add y 1
-mul z y
-mul y 0
-add y w
-add y 7
-mul y x
-add z y`, []int{-1, -1})
+														w14 := z13 - 9
+														if w14 <= 0 || w14 > 9 {
+															continue
+														}
 
-	// challenge.Test(``, []int{-1, -1})
+														z14 := step(w14, z13, -9, 10, true)
 
-	challenge.Solution(1, func (input *bufio.Scanner) int {
-		program := Compile(input)
-
-		fmt.Println("ORIGINAL")
-		for _, i := range program {
-			fmt.Printf("%v\n", i)
+														if z14 == 0 {
+															fmt.Println("SOLUTION FOUND:", w1, w2, w3, w4, w5, w6, w7, w8, w9, w10, w11, w12, w13, w14)
+															return
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		fmt.Println(len(program))
-
-		fmt.Println("OPTIMIZED")
-		opti := program.Optimize()
-		for _, i := range opti {
-			fmt.Printf("%v\n", i)
-		}
-		fmt.Println(len(opti))
-
-		str := "25579246899999"
-		fmt.Println(program.Execute(str))
-		fmt.Println(opti.Execute(str))
-
-		// fmt.Println(mem)
-
-		return 0
-	})
-
-	challenge.Solution(2, func (input *bufio.Scanner) int {
-		return 0
-	})
+	}
 }

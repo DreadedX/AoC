@@ -1,5 +1,7 @@
 package main
 
+// import "fmt"
+
 type RegisterState struct {
 	value int
 	last int
@@ -18,49 +20,61 @@ func (p Program) precomp() Program {
 	}
 
 	for _, i := range p {
+		// fmt.Println(i)
 		switch i.op {
 		case INP:
 			r[i.a].known = false
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case ADD:
 			if r[i.a].known {
 				r[i.a].value += i.b
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case ADDR:
 			if r[i.a].known && r[i.b].known {
 				r[i.a].value += r[i.b].value
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
-				np = append(np, Instruction{MUL, i.a, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.a].value})
+				if r[i.a].value - r[i.a].last != 0 {
+					np = append(np, Instruction{ADD, i.a, r[i.a].value - r[i.a].last})
+					r[i.a].last = r[i.a].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			if r[i.b].known {
-				np = append(np, Instruction{MUL, i.b, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.b].value})
+				if r[i.b].value - r[i.b].last != 0 {
+					np = append(np, Instruction{ADD, i.b, r[i.b].value - r[i.b].last})
+					r[i.b].last = r[i.b].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			r[i.a].known = false
+			// fmt.Printf("- \t%v\n", r)
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case MUL:
 			if i.b == 0 {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -70,14 +84,17 @@ func (p Program) precomp() Program {
 
 			if r[i.a].known {
 				r[i.a].value *= i.b
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case MULR:
 			if r[i.a].known && r[i.a].value == 0 {
 				r[i.a].value = 0
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -85,9 +102,12 @@ func (p Program) precomp() Program {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -97,25 +117,30 @@ func (p Program) precomp() Program {
 
 			if r[i.a].known && r[i.b].known {
 				r[i.a].value *= r[i.b].value
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
-				np = append(np, Instruction{MUL, i.a, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.a].value})
+				if r[i.a].value - r[i.a].last != 0 {
+					np = append(np, Instruction{ADD, i.a, r[i.a].value - r[i.a].last})
+					r[i.a].last = r[i.a].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			if r[i.b].known {
-				np = append(np, Instruction{MUL, i.b, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.b].value})
+				if r[i.b].value - r[i.b].last != 0 {
+					np = append(np, Instruction{ADD, i.b, r[i.b].value - r[i.b].last})
+					r[i.b].last = r[i.b].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			r[i.a].known = false
+			// fmt.Printf("- \t%v\n", r)
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case DIV:
 			if i.b == 1 {
@@ -124,14 +149,17 @@ func (p Program) precomp() Program {
 
 			if r[i.a].known {
 				r[i.a].value /= i.b
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case DIVR:
 			if r[i.a].known && r[i.a].value == 0 {
 				r[i.a].value = 0
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -141,34 +169,42 @@ func (p Program) precomp() Program {
 
 			if r[i.a].known && r[i.b].known {
 				r[i.a].value /= r[i.b].value
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
-				np = append(np, Instruction{MUL, i.a, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.a].value})
+				if r[i.a].value - r[i.a].last != 0 {
+					np = append(np, Instruction{ADD, i.a, r[i.a].value - r[i.a].last})
+					r[i.a].last = r[i.a].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			if r[i.b].known {
-				np = append(np, Instruction{MUL, i.b, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.b].value})
+				if r[i.b].value - r[i.b].last != 0 {
+					np = append(np, Instruction{ADD, i.b, r[i.b].value - r[i.b].last})
+					r[i.b].last = r[i.b].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			r[i.a].known = false
+			// fmt.Printf("- \t%v\n", r)
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case MOD:
 			if i.b == -1 {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -176,22 +212,28 @@ func (p Program) precomp() Program {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
 				r[i.a].value %= i.b
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case MODR:
 			if r[i.a].known && r[i.a].value == 0 {
 				r[i.a].value = 0
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -199,9 +241,12 @@ func (p Program) precomp() Program {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -209,33 +254,41 @@ func (p Program) precomp() Program {
 				r[i.a].value = 0
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known && r[i.b].known {
 				r[i.a].value %= r[i.b].value
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
-				np = append(np, Instruction{MUL, i.a, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.a].value})
+				if r[i.a].value - r[i.a].last != 0 {
+					np = append(np, Instruction{ADD, i.a, r[i.a].value - r[i.a].last})
+					r[i.a].last = r[i.a].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			if r[i.b].known {
-				np = append(np, Instruction{MUL, i.b, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.b].value})
+				if r[i.b].value - r[i.b].last != 0 {
+					np = append(np, Instruction{ADD, i.b, r[i.b].value - r[i.b].last})
+					r[i.b].last = r[i.b].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			r[i.a].known = false
+			// fmt.Printf("- \t%v\n", r)
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case EQL:
 			if r[i.a].known {
@@ -244,19 +297,24 @@ func (p Program) precomp() Program {
 					val = 1
 				}
 				r[i.a].value = val
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		case EQLR:
 			if i.a == i.b {
 				r[i.a].value = 1
 				if !r[i.a].known {
 					r[i.a].value = 0
+					r[i.a].last = 0
 					r[i.a].known = true
 					np = append(np, Instruction{MUL, i.a, 0})
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
@@ -266,25 +324,30 @@ func (p Program) precomp() Program {
 					val = 1
 				}
 				r[i.a].value = val
+				// fmt.Printf("- \t%v\n", r)
 				continue
 			}
 
 			if r[i.a].known {
-				np = append(np, Instruction{MUL, i.a, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.a].value})
+				if r[i.a].value - r[i.a].last != 0 {
+					np = append(np, Instruction{ADD, i.a, r[i.a].value - r[i.a].last})
+					r[i.a].last = r[i.a].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			if r[i.b].known {
-				np = append(np, Instruction{MUL, i.b, 0})
-				if r[i.b].value != 0 {
-					np = append(np, Instruction{ADD, i.b, r[i.b].value})
+				if r[i.b].value - r[i.b].last != 0 {
+					np = append(np, Instruction{ADD, i.b, r[i.b].value - r[i.b].last})
+					r[i.b].last = r[i.b].value
+					// fmt.Printf("- \t%v\n", np[len(np)-1])
 				}
 			}
 
 			r[i.a].known = false
+			// fmt.Printf("- \t%v\n", r)
 			np = append(np, i)
+			// fmt.Printf("- \t%v\n", np[len(np)-1])
 
 		}
 	}
