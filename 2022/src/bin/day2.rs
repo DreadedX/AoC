@@ -33,13 +33,13 @@ impl Hand {
     // Return hand that this hand loses to
     fn loses(&self) -> Hand {
         // Returns the next enum (cyclical) as that one always loses from the current one
-        Hand::from((u8::from(self) + 1) % 3)
+        Hand::from((*self as u8 + 1) % 3)
     }
 
     // Return hand that this hand wins from
     fn wins(&self) -> Hand {
         // Returns the previous enum (cyclical) as that one always wins from the current one
-        Hand::from((i8::from(self) - 1).rem_euclid(3) as u8)
+        Hand::from((*self as i8 - 1).rem_euclid(3) as u8)
     }
 
     fn strategy(&self, input: char) -> Hand {
@@ -51,15 +51,15 @@ impl Hand {
         }
     }
 
-    // Check if we win against the other hand
+    // Play agains other hand and return our score
     fn play(&self, other: &Hand) -> u32 {
         // 1 = draw, 2 = wins, 0 = loses (x3 to get the score
-        ((i8::from(self) - i8::from(other) + 1).rem_euclid(3) * 3) as u32
+        ((*self as i8 - *other as i8 + 1).rem_euclid(3) * 3) as u32
     }
 
     // Get the score value of the current hand
     fn value(&self) -> u32 {
-        u8::from(self) as u32 + 1
+        *self as u32 + 1
     }
 }
 
@@ -83,24 +83,6 @@ impl From<char> for Hand {
             'C' | 'Z' => Self::Scissors,
             value => panic!("Unknown input: {value}"),
         }
-    }
-}
-
-impl From<&Hand> for i8 {
-    fn from(value: &Hand) -> Self {
-        *value as Self
-    }
-}
-
-impl From<&Hand> for u8 {
-    fn from(value: &Hand) -> Self {
-        *value as Self
-    }
-}
-
-impl From<Hand> for u8 {
-    fn from(value: Hand) -> Self {
-        value as Self
     }
 }
 
