@@ -6,11 +6,11 @@ fn main() {
 }
 #[test]
 fn part1() {
-    Day::test(aoc::Part::ONE);
+    Day::test(aoc::Part::ONE, "test-1", 24000);
 }
 #[test]
 fn part2() {
-    Day::test(aoc::Part::TWO);
+    Day::test(aoc::Part::TWO, "test-1", 45000);
 }
 
 
