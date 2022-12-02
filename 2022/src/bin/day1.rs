@@ -29,7 +29,7 @@ impl aoc::Solver for Day {
 
     fn part1(input: &str) -> u32 {
         input.split("\n\n")
-            .map(|elf| elf.split("\n")
+            .map(|elf| elf.lines()
                  .flat_map(|snack| snack.parse::<u32>())
                  .sum())
             .max()
@@ -38,7 +38,7 @@ impl aoc::Solver for Day {
 
     fn part2(input: &str) -> u32 {
         let mut elfs: Vec<u32> = input.split("\n\n")
-            .map(|elf| elf.split("\n")
+            .map(|elf| elf.lines()
                  .flat_map(|snack| snack.parse::<u32>())
                  .sum())
             .collect();

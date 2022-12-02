@@ -103,7 +103,7 @@ impl aoc::Solver for Day {
     }
 
     fn part1(input: &str) -> u32 {
-        input.split("\n")
+        input.lines()
             .filter(|round| round.len() > 0)
             .map(round_to_letters)
             .map(|(a, b)| (Hand::from(a), Hand::from(b)))
@@ -112,7 +112,7 @@ impl aoc::Solver for Day {
     }
 
     fn part2(input: &str) -> u32 {
-        input.split("\n")
+        input.lines()
             .filter(|round| round.len() > 0)
             .map(round_to_letters)
             .map(|(a, b)| (Hand::from(a), b))
