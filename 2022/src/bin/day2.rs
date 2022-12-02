@@ -57,20 +57,15 @@ impl Hand {
         // 1 = draw, 2 = wins, 0 = loses (x3 to get the score
         ((*self as i8 - *other as i8 + 1).rem_euclid(3) * 3) as u32
     }
-
-    // Get the score value of the current hand
-    fn value(&self) -> u32 {
-        *self as u32 + 1
-    }
 }
 
 // -- Conversions --
 impl From<u8> for Hand {
     fn from(value: u8) -> Self {
         match value {
-            x if x == Hand::Rock as u8 => Hand::Rock,
-            x if x == Hand::Paper as u8 => Hand::Paper,
-            x if x == Hand::Scissors as u8 => Hand::Scissors,
+            x if x == Self::Rock as u8 => Self::Rock,
+            x if x == Self::Paper as u8 => Self::Paper,
+            x if x == Self::Scissors as u8 => Self::Scissors,
             x => panic!("Unknown input: {}", x)
         }
     }
@@ -87,6 +82,12 @@ impl From<&str> for Hand {
     }
 }
 
+impl From<&Hand> for u32 {
+    fn from(value: &Hand) -> Self {
+        *value as u32 + 1
+    }
+}
+
 // -- Helper functions --
 // Convert the round to a tuple containing the actions of both players
 fn convert(round: &str) -> (&str, &str) {
@@ -97,7 +98,7 @@ fn convert(round: &str) -> (&str, &str) {
 }
 
 fn calc_score(sum: u32, (a, b): (Hand, Hand)) -> u32 {
-    sum + b.play(&a) + b.value()
+    sum + b.play(&a) + u32::from(&b)
 }
 
 // -- Solution --
