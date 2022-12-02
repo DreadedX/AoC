@@ -1,14 +1,14 @@
 #!/bin/bash
-mkdir -p $1/$2
-cd $1/$2
+mkdir -p $year/$1
+cd $year/$1
 cat > go.mod << EOM
-module AoC/$1/$2
+module AoC/$year/$1
 
-require AoC/$1/common v0.0.0
+require AoC/$year/common v0.0.0
 
 require github.com/joho/godotenv v1.4.0 // indirect
 
-replace AoC/$1/common v0.0.0 => ../common
+replace AoC/$year/common v0.0.0 => ../common
 
 go 1.17
 EOM
@@ -24,7 +24,7 @@ import (
 )
 
 func main() {
-	challenge := aoc.New($1, $2)
+	challenge := aoc.New($year, $1)
 
 	challenge.Test(\`\`, []int{-1, -1})
 
