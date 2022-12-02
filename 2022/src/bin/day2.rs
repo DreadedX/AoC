@@ -1,52 +1,53 @@
 // -- Setup & Runners --
+use anyhow::Result;
 use aoc::Solver;
 pub struct Day;
-fn main() {
-    Day::solve();
+fn main() -> Result<()> {
+    Day::solve()
 }
 #[test]
-fn part1_test1() {
-    Day::test(aoc::Part::ONE, "test-1", 15);
+fn part1_test1() -> Result<()> {
+    Day::test(aoc::Part::ONE, "test-1", 15)
 }
 #[test]
-fn part2_test1() {
-    Day::test(aoc::Part::TWO, "test-1", 12);
+fn part2_test1() -> Result<()> {
+    Day::test(aoc::Part::TWO, "test-1", 12)
 }
 #[test]
-fn part1_solution() {
-    Day::test(aoc::Part::ONE, "input", 14264);
+fn part1_solution() -> Result<()> {
+    Day::test(aoc::Part::ONE, "input", 14264)
 }
 #[test]
-fn part2_solution() {
-    Day::test(aoc::Part::TWO, "input", 12382);
+fn part2_solution() -> Result<()> {
+    Day::test(aoc::Part::TWO, "input", 12382)
 }
 
 // -- Implementation for hand --
 #[derive(Debug, Copy, Clone)]
 enum Hand {
-    Rock = 0,
-    Paper = 1,
-    Scissors = 2,
+    Rock,
+    Paper,
+    Scissors,
 }
 
 impl Hand {
     // Return hand that this hand loses to
-    fn loses(&self) -> Hand {
+    fn loses_to(&self) -> Hand {
         // Returns the next enum (cyclical) as that one always loses from the current one
         Hand::from((*self as u8 + 1) % 3)
     }
 
     // Return hand that this hand wins from
-    fn wins(&self) -> Hand {
+    fn wins_from(&self) -> Hand {
         // Returns the previous enum (cyclical) as that one always wins from the current one
         Hand::from((*self as i8 - 1).rem_euclid(3) as u8)
     }
 
-    fn strategy(&self, input: char) -> Hand {
+    fn strategy(&self, input: &str) -> Hand {
         match input {
-            'X' => self.wins(),
-            'Y' => *self,
-            'Z' => self.loses(),
+            "X" => self.wins_from(),
+            "Y" => *self,
+            "Z" => self.loses_to(),
             _ => panic!("Unexpected input")
         }
     }
@@ -75,25 +76,28 @@ impl From<u8> for Hand {
     }
 }
 
-impl From<char> for Hand {
-    fn from(value: char) -> Self {
-        match value {
-            'A' | 'X' => Self::Rock,
-            'B' | 'Y' => Self::Paper,
-            'C' | 'Z' => Self::Scissors,
-            value => panic!("Unknown input: {value}"),
+impl From<&str> for Hand {
+    fn from(s: &str) -> Self {
+        match s {
+            "A" | "X" => Self::Rock,
+            "B" | "Y" => Self::Paper,
+            "C" | "Z" => Self::Scissors,
+            _ => panic!("Invalid input: {s}"),
         }
     }
 }
 
 // -- Helper functions --
 // Convert the round to a tuple containing the actions of both players
-fn round_to_letters(round: &str) -> (char, char) {
-    if let &[a, _, b] = round.as_bytes() {
-        (a as char, b as char)
-    } else {
-        panic!("Unexpected input");
+fn convert(round: &str) -> (&str, &str) {
+    match round.split_once(" ") {
+        Some((a, b)) => (a, b),
+        None => panic!("Invalid input: {round}"),
     }
+}
+
+fn calc_score(sum: u32, (a, b): (Hand, Hand)) -> u32 {
+    sum + b.play(&a) + b.value()
 }
 
 // -- Solution --
@@ -105,19 +109,19 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> u32 {
         input.lines()
             .filter(|round| round.len() > 0)
-            .map(round_to_letters)
+            .map(convert)
             .map(|(a, b)| (Hand::from(a), Hand::from(b)))
-            .map(|(a, b)| b.play(&a) + b.value())
-            .sum()
+            .fold(0, calc_score)
     }
 
     fn part2(input: &str) -> u32 {
         input.lines()
             .filter(|round| round.len() > 0)
-            .map(round_to_letters)
-            .map(|(a, b)| (Hand::from(a), b))
-            .map(|(a, b)| (a, a.strategy(b)))
-            .map(|(a, b)| b.play(&a) + b.value())
-            .sum()
+            .map(convert)
+            .map(|(a, b)| {
+                let opponent = Hand::from(a);
+                (opponent, opponent.strategy(b))
+            })
+            .fold(0, calc_score)
     }
 }
