@@ -1,28 +1,35 @@
-// -- Setup & Runners --
 use anyhow::Result;
 use aoc::Solver;
-pub struct Day;
+
+// -- Runners --
 fn main() -> Result<()> {
     Day::solve()
 }
-#[test]
-fn part1_test1() -> Result<()> {
-    Day::test(aoc::Part::ONE, "test-1", 24000)
-}
-#[test]
-fn part2_test1() -> Result<()> {
-    Day::test(aoc::Part::TWO, "test-1", 45000)
-}
-#[test]
-fn part1_solution() -> Result<()> {
-    Day::test(aoc::Part::ONE, "input", 70116)
-}
-#[test]
-fn part2_solution() -> Result<()> {
-    Day::test(aoc::Part::TWO, "input", 206582)
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn part1_test1() -> Result<()> {
+        Day::test(aoc::Part::ONE, "test-1", 24000)
+    }
+    #[test]
+    fn part2_test1() -> Result<()> {
+        Day::test(aoc::Part::TWO, "test-1", 45000)
+    }
+    #[test]
+    fn part1_solution() -> Result<()> {
+        Day::test(aoc::Part::ONE, "input", 70116)
+    }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(aoc::Part::TWO, "input", 206582)
+    }
 }
 
 // -- Solution --
+pub struct Day;
 impl aoc::Solver for Day {
     fn day() -> u8 {
         1

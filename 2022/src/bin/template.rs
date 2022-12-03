@@ -1,16 +1,23 @@
-// -- Setup & Runners --
 use anyhow::Result;
 use aoc::Solver;
-pub struct Day;
+
+// -- Runners --
 fn main() -> Result<()> {
     Day::solve()
 }
-#[test]
-fn part1_test1() -> Result<()> {
-    Day::test(aoc::Part::ONE, "test-1", 0)
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn part1_test1() -> Result<()> {
+        Day::test(aoc::Part::ONE, "test-1", 0)
+    }
 }
 
 // -- Solution --
+pub struct Day;
 impl aoc::Solver for Day {
     fn day() -> u8 {
         todo!("Day not set")
