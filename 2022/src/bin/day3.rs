@@ -71,7 +71,7 @@ impl aoc::Solver for Day {
                 if let [a, b, c] = group {
                     (a, b, c)
                 } else {
-                    panic!("Invalid input")
+                    panic!("The total amount of lines should be a multiple of 3")
                 }
             })
             .map(|(a, b, c)| {
