@@ -49,8 +49,8 @@ impl aoc::Solver for Day {
         input.lines()
             .map(|line| line.split_at(line.len()/2))
             .map(|(a, b)| {
-                // @NOTE This is not really ok if the string contains multi byte characters
-                // @TODO Is there a better way to do this
+                // @NOTE This is not really ok if the string contains multi byte characters, this
+                // is however not the case here
                 for c in a.as_bytes() {
                     // There is always one character in common between the two sides
                     if b.contains(*c as char) {
@@ -64,24 +64,23 @@ impl aoc::Solver for Day {
     }
 
     fn part2(input: &str) -> u32 {
-        let mut lines = input.lines();
-
-        // @TODO Is there a beter way to do this conversion, this seems a bit messy
-        let mut groups: Vec<(&str, &str, &str)> = Vec::new();
-        loop {
-            match (lines.next(), lines.next(), lines.next()) {
-                (Some(a), Some(b), Some(c)) => groups.push((a, b, c)),
-                (None, None, None) => break,
-                _ => panic!("Invalid input"),
-            }
-        }
-
-        groups.iter()
+        input.lines()
+            .collect::<Vec<_>>()
+            .chunks(3)
             .map(|group| {
-                for c in group.0.as_bytes() {
-                    // There is always one character in common between the two sides
-                    if group.1.contains(*c as char) && group.2.contains(*c as char) {
-                        return c;
+                if let [a, b, c] = group {
+                    (a, b, c)
+                } else {
+                    panic!("Invalid input")
+                }
+            })
+            .map(|(a, b, c)| {
+                // @NOTE This is not really ok if the string contains multi byte characters, this
+                // is however not the case here
+                for l in a.as_bytes() {
+                    // There is always one character in common between the three rucksacks
+                    if b.contains(*l as char) && c.contains(*l as char) {
+                        return l;
                     }
                 }
                 unreachable!("No characters in common, this should never happen")
