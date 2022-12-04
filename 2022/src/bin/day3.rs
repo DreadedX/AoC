@@ -29,13 +29,28 @@ mod tests {
 }
 
 // -- Helpers --
-fn convert(c: &u8) -> u32 {
+fn convert(c: char) -> u32 {
     let result = match c {
-        b'a'..=b'z' => c - b'a' + 1,
-        b'A'..=b'Z' => c - b'A' + 27,
+        'a'..='z' => c as u32 - 'a' as u32 + 1,
+        'A'..='Z' => c as u32 - 'A' as u32 + 27,
         _ => panic!("Invalid input"),
     };
-    result as u32
+    result
+}
+
+// Very nice alternative way to find the overlap
+// Based on something I say online
+// Part 1 could also be adapted to use this, but for historical sake I will leave that as is
+// Part 2 was originally done the same as part 1, just with an extra condition in the if
+fn find_common(group: &[&str]) -> char {
+    let mut common = group[0].chars().collect::<Vec<_>>();
+
+    // Only keep characters that appear in all other strings
+    common.retain(|&c| {
+        group[1..].iter().all(|g| g.contains(c))
+    });
+
+    *common.first().expect("Should be one overlap")
 }
 
 // -- Solution --
@@ -49,11 +64,9 @@ impl aoc::Solver for Day {
         input.lines()
             .map(|line| line.split_at(line.len()/2))
             .map(|(a, b)| {
-                // @NOTE This is not really ok if the string contains multi byte characters, this
-                // is however not the case here
-                for c in a.as_bytes() {
+                for c in a.chars() {
                     // There is always one character in common between the two sides
-                    if b.contains(*c as char) {
+                    if b.contains(c) {
                         return c;
                     }
                 }
@@ -67,24 +80,7 @@ impl aoc::Solver for Day {
         input.lines()
             .collect::<Vec<_>>()
             .chunks(3)
-            .map(|group| {
-                if let [a, b, c] = group {
-                    (a, b, c)
-                } else {
-                    panic!("The total amount of lines should be a multiple of 3")
-                }
-            })
-            .map(|(a, b, c)| {
-                // @NOTE This is not really ok if the string contains multi byte characters, this
-                // is however not the case here
-                for l in a.as_bytes() {
-                    // There is always one character in common between the three rucksacks
-                    if b.contains(*l as char) && c.contains(*l as char) {
-                        return l;
-                    }
-                }
-                unreachable!("No characters in common, this should never happen")
-            })
+            .map(find_common)
             .map(convert)
             .sum()
     }

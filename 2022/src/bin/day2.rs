@@ -95,14 +95,6 @@ impl From<&Hand> for u32 {
 }
 
 // -- Helper functions --
-// Convert the round to a tuple containing the actions of both players
-fn convert(round: &str) -> (&str, &str) {
-    match round.split_once(" ") {
-        Some((a, b)) => (a, b),
-        None => panic!("Invalid input: {round}"),
-    }
-}
-
 fn calc_score(sum: u32, (a, b): (Hand, Hand)) -> u32 {
     sum + b.play(&a) + u32::from(&b)
 }
@@ -116,16 +108,14 @@ impl aoc::Solver for Day {
 
     fn part1(input: &str) -> u32 {
         input.lines()
-            .filter(|round| round.len() > 0)
-            .map(convert)
+            .filter_map(|round| round.split_once(" "))
             .map(|(a, b)| (Hand::from(a), Hand::from(b)))
             .fold(0, calc_score)
     }
 
     fn part2(input: &str) -> u32 {
         input.lines()
-            .filter(|round| round.len() > 0)
-            .map(convert)
+            .filter_map(|round| round.split_once(" "))
             .map(|(a, b)| {
                 let opponent = Hand::from(a);
                 (opponent, opponent.strategy(b))
