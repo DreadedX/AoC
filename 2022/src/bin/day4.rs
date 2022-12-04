@@ -23,31 +23,48 @@ mod tests {
     fn part1_solution() -> Result<()> {
         Day::test(aoc::Part::ONE, "input", 567)
     }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(aoc::Part::TWO, "input", 907)
+    }
 }
 
-// -- Helper --
-// @TODO Implement this on the iterator?
-fn apply<F, U, V>((a, b): (U, U), f: F) -> (V, V) where
-    F: Fn(U) -> V {
-        (f(a), f(b))
+// -- Implementation --
+struct Elf {
+    start: u32,
+    end: u32,
 }
 
-// This filter check if either side is fully contained in the other side
-fn contains(pair: &((u32, u32), (u32, u32))) -> bool {
-    (pair.0.0 <= pair.1.0 && pair.0.1 >= pair.1.1) || (pair.1.0 <= pair.0.0 && pair.1.1 >= pair.0.1)
+impl Elf {
+    fn new(a: u32, b: u32) -> Elf {
+        Elf { start: a, end: b }
+    }
 }
 
-fn overlaps(pair: &((u32, u32), (u32, u32))) -> bool {
-    if pair.0.1 >= pair.1.0 && pair.0.1 <= pair.1.1 {
-        true
-    } else if pair.0.0 >= pair.1.0 && pair.0.0 <= pair.1.1 {
-        true
-    } else if pair.1.1 >= pair.0.0 && pair.1.1 <= pair.0.1 {
-        true
-    } else if pair.1.0 >= pair.0.0 && pair.1.0 <= pair.0.1 {
-        true
+// -- Helpers --
+// Check if one of the elf is fully contained by the other
+fn contains((a, b): &(Elf, Elf)) -> bool {
+    (a.start <= b.start && a.end >= b.end) || (b.start <= a.start && b.end >= a.end)
+}
+
+// Check if there is overlap between two elfs
+fn overlaps((a, b): &(Elf, Elf)) -> bool {
+    cmp::min(a.end, b.end) >= cmp::max(a.start, b.start)
+}
+
+// Transform from line to pair of Elfs
+fn transform(s: &str) -> (Elf, Elf) {
+    let transformed = s.split(',')
+        .flat_map(|pair| pair.split('-'))
+        .flat_map(|value| value.parse::<u32>())
+        .collect::<Vec<_>>();
+
+    assert_eq!(transformed.len(), 4, "Invalid input");
+
+    if let [a, b, c, d] = transformed[..4] {
+        (Elf::new(a,b), Elf::new(c, d))
     } else {
-        false
+        panic!("Invalid input")
     }
 }
 
@@ -61,17 +78,7 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> u32 {
         input
             .lines()
-            .map(|line| line.split_once(',').expect("Invalid input"))
-            .map(|pair| apply(pair, |pair| pair.split_once("-").expect("Invalid input")))
-            .map(|pair| apply(pair, |side| {
-                apply(side, |a| {
-                    if let Ok(num) = a.parse::<u32>() {
-                        num
-                    } else {
-                        panic!("Invalid input")
-                    }
-                })
-            }))
+            .map(transform)
             .filter(contains)
             .count() as u32
     }
@@ -79,17 +86,7 @@ impl aoc::Solver for Day {
     fn part2(input: &str) -> u32 {
         input
             .lines()
-            .map(|line| line.split_once(',').expect("Invalid input"))
-            .map(|pair| apply(pair, |pair| pair.split_once("-").expect("Invalid input")))
-            .map(|pair| apply(pair, |side| {
-                apply(side, |a| {
-                    if let Ok(num) = a.parse::<u32>() {
-                        num
-                    } else {
-                        panic!("Invalid input")
-                    }
-                })
-            }))
+            .map(transform)
             .filter(overlaps)
             .count() as u32
     }
