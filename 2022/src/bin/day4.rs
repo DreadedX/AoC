@@ -1,6 +1,6 @@
 use std::cmp;
 use anyhow::Result;
-use aoc::Solver;
+use aoc::{Solver, Output};
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -13,19 +13,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 2)
+        Day::test(aoc::Part::ONE, "test-1", Output::Number(2))
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 4)
+        Day::test(aoc::Part::TWO, "test-1", Output::Number(4))
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 567)
+        Day::test(aoc::Part::ONE, "input", Output::Number(567))
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 907)
+        Day::test(aoc::Part::TWO, "input", Output::Number(907))
     }
 }
 
@@ -76,19 +76,23 @@ impl aoc::Solver for Day {
         4
     }
 
-    fn part1(input: &str) -> u32 {
-        input
+    fn part1(input: &str) -> Output {
+        let result = input
             .lines()
             .map(transform)
             .filter(contains)
-            .count() as u32
+            .count() as u32;
+
+        Output::Number(result)
     }
 
-    fn part2(input: &str) -> u32 {
-        input
+    fn part2(input: &str) -> Output {
+        let result = input
             .lines()
             .map(transform)
             .filter(overlaps)
-            .count() as u32
+            .count() as u32;
+
+        Output::Number(result)
     }
 }

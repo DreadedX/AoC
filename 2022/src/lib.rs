@@ -1,3 +1,4 @@
+use core::fmt;
 use std::fs;
 
 use anyhow::{Context, Result};
@@ -7,12 +8,30 @@ pub enum Part {
     TWO
 }
 
+#[derive(Debug,PartialEq, PartialOrd)]
+pub enum Output {
+    Number(u32),
+    String(String),
+}
+
+impl fmt::Display for Output {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Output::Number(i) => write!(f, "{}", i)?,
+            Output::String(s) => write!(f, "{}", s)?,
+            _ => panic!("fmt::Display not implemented")
+        }
+
+        Ok(())
+    }
+}
+
 pub trait Solver {
     fn day() -> u8;
-    fn part1(input: &str) -> u32;
-    fn part2(input: &str) -> u32;
+    fn part1(input: &str) -> Output;
+    fn part2(input: &str) -> Output;
 
-    fn test(part: Part, name: &str, result: u32) -> Result<()> {
+    fn test(part: Part, name: &str, result: Output) -> Result<()> {
         // Select the right function
         let fun = match part {
             Part::ONE => Self::part1,

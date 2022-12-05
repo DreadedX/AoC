@@ -1,5 +1,5 @@
 use anyhow::Result;
-use aoc::Solver;
+use aoc::{Solver, Output};
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 0)
+        Day::test(aoc::Part::ONE, "test-1", Output::Number(0))
     }
 }
 
@@ -23,11 +23,11 @@ impl aoc::Solver for Day {
         todo!("Day not set")
     }
 
-    fn part1(input: &str) -> u32 {
-        0
+    fn part1(input: &str) -> Output {
+        Output::Number(0)
     }
 
-    fn part2(input: &str) -> u32 {
-        0
+    fn part2(input: &str) -> Output {
+        Output::Number(0)
     }
 }
