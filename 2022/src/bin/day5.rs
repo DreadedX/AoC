@@ -49,7 +49,7 @@ impl fmt::Display for Boat {
         for i in 0..self.stacks.len() {
             match self.top(i+1) {
                 Some(cr) => write!(f, "{}", cr.letter)?,
-                None => panic!("No crate in stack")
+                None => write!(f, " ")?,
             }
         }
 
@@ -75,23 +75,26 @@ impl Boat {
         }
 
         // Because of how we load the data, each stack is upside down
-        boat.reverse();
+        for stack in boat.stacks.iter_mut() {
+            stack.1.reverse()
+        }
 
         return boat;
     }
 
-    fn push(&mut self, index: usize, cr: Crate) {
-        let stack = self.stacks.entry(index).or_insert(vec![]);
-        stack.push(cr);
+    fn take(&mut self, index: usize, amount: usize) -> Vec<Crate> {
+        let stack = self.stacks.entry(index).or_default();
+        stack.split_off(stack.len()-amount)
     }
 
-    fn pop(&mut self, index: usize) -> Option<Crate> {
-        let stack = match self.stacks.get_mut(&index) {
-            Some(s) => s,
-            None => return None,
-        };
+    fn put(&mut self, index: usize, mut vec: Vec<Crate>) {
+        let stack = self.stacks.entry(index).or_default();
+        stack.append(&mut vec);
+    }
 
-        stack.pop()
+    fn push(&mut self, index: usize, cr: Crate) {
+        let stack = self.stacks.entry(index).or_default();
+        stack.push(cr);
     }
 
     fn top(&self, index: usize) -> Option<&Crate> {
@@ -102,16 +105,9 @@ impl Boat {
 
         stack.last()
     }
-
-    fn reverse(&mut self) {
-        for stack in self.stacks.iter_mut() {
-            stack.1.reverse()
-        }
-    }
 }
 
 // -- Helpers --
-
 fn parse_instruction(s: &str) -> (usize, usize, usize) {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"move (?P<amount>[0-9]+) from (?P<from>[0-9]) to (?P<to>[0-9])").unwrap();
@@ -127,6 +123,31 @@ fn parse_instruction(s: &str) -> (usize, usize, usize) {
     (amount, from, to)
 }
 
+fn solution(input: &str, reverse: bool) -> Output {
+    // The current layout description ends with an empty line
+    let mut boat = Boat::new(&input
+                             .lines()
+                             .take_while(|line| !line.is_empty())
+                             .collect());
+
+    // Each instruction starts with an 'm'
+    input
+        .lines()
+        .skip_while(|line| !line.starts_with('m'))
+        .map(parse_instruction)
+        .for_each(|(amount, from, to)| {
+            let mut taken = boat.take(from, amount);
+            // The order needs to be reversed in part due to the crates being moves one at the time
+            // instead of the whole stack at once as happens in part 2
+            if reverse {
+                taken.reverse();
+            }
+            boat.put(to, taken);
+        });
+
+    Output::String(boat.to_string())
+}
+
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
@@ -135,55 +156,10 @@ impl aoc::Solver for Day {
     }
 
     fn part1(input: &str) -> Output {
-        // The current layout description ends with an empty line
-        let mut boat = Boat::new(&input
-                                 .lines()
-                                 .take_while(|line| !line.is_empty())
-                                 .collect());
-
-        // Each instruction starts with an 'm'
-        input
-            .lines()
-            .skip_while(|line| !line.starts_with('m'))
-            .map(parse_instruction)
-            .for_each(|(amount, from, to)| {
-                for _ in 0..amount {
-                    let cr = boat.pop(from).unwrap();
-                    boat.push(to, cr);
-                }
-            });
-
-        Output::String(boat.to_string())
+        solution(input, true)
     }
 
     fn part2(input: &str) -> Output {
-        // The current layout description ends with an empty line
-        let mut boat = Boat::new(&input
-                                 .lines()
-                                 .take_while(|line| !line.is_empty())
-                                 .collect());
-
-        // Each instruction starts with an 'm'
-        input
-            .lines()
-            .skip_while(|line| !line.starts_with('m'))
-            .map(parse_instruction)
-            .for_each(|(amount, from, to)| {
-                // @TODO Is there a nicer way to do this?
-                let mut temp = vec![];
-
-                for _ in 0..amount {
-                    let cr = boat.pop(from).unwrap();
-                    temp.push(cr);
-                }
-
-                temp.reverse();
-
-                for cr in temp {
-                    boat.push(to, cr);
-                }
-            });
-
-        Output::String(boat.to_string())
+        solution(input, false)
     }
 }
