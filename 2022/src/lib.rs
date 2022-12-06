@@ -47,9 +47,9 @@ pub trait Solver {
 
     fn benchmark(part: Part, b: &mut test::Bencher) {
         let f = Self::select(part);
+        let input = fs::read_to_string(format!("input/{}/input", Self::day())).with_context(|| format!("Failed to read 'input' for day {}", Self::day())).unwrap();
 
         b.iter(|| {
-            let input = fs::read_to_string(format!("input/{}/input", Self::day())).unwrap();
             f(&input)
         });
     }

@@ -12,6 +12,7 @@ fn main() -> Result<()> {
     Day::solve()
 }
 
+// -- Tests --
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -33,16 +34,35 @@ mod tests {
         Day::test(aoc::Part::TWO, "input", "CNSFCGJSM".to_string())
     }
 
+    // Run it on a 6MB file to see how it performs
+    // https://www.reddit.com/r/adventofcode/comments/zd1hqy/2022_day_5_i_know_i_am_overthinking_it/iyzvsnp/?context=3
+    #[test]
+    #[ignore]
+    fn part1_large() -> Result<()> {
+        Day::test(aoc::Part::ONE, "large", "GATHERING".to_string())
+    }
+    #[test]
+    #[ignore]
+    fn part2_large() -> Result<()> {
+        Day::test(aoc::Part::TWO, "large", "DEVSCHUUR".to_string())
+    }
+}
+
+// -- Benchmarks --
+#[cfg(test)]
+mod bench {
+    use super::*;
+
     // Benchmarks
     extern crate test;
     #[bench]
     #[ignore]
-    fn part1_bench(b: &mut test::Bencher) {
+    fn part1_solution(b: &mut test::Bencher) {
         Day::benchmark(aoc::Part::ONE, b)
     }
     #[bench]
     #[ignore]
-    fn part2_bench(b: &mut test::Bencher) {
+    fn part2_solution(b: &mut test::Bencher) {
         Day::benchmark(aoc::Part::TWO, b)
     }
 }
@@ -137,7 +157,7 @@ fn parse_instruction(s: &str) -> (usize, usize, usize) {
     (amount, from, to)
 }
 
-fn solution(input: &str, reverse: bool) -> String {
+fn solution(input: &str, part1: bool) -> String {
     // The current layout description ends with an empty line
     let mut boat = Boat::new(&input
                              .lines()
@@ -151,9 +171,9 @@ fn solution(input: &str, reverse: bool) -> String {
         .map(parse_instruction)
         .for_each(|(amount, from, to)| {
             let mut taken = boat.take(from, amount);
-            // The order needs to be reversed in part due to the crates being moves one at the time
-            // instead of the whole stack at once as happens in part 2
-            if reverse {
+            if part1 {
+                // In part one we move the crates on by one, so the vector needs to be reverse to
+                // get the correct order
                 taken.reverse();
             }
             boat.put(to, taken);

@@ -27,17 +27,23 @@ mod tests {
     fn part2_solution() -> Result<()> {
         Day::test(aoc::Part::TWO, "input", 12382)
     }
+}
+
+// -- Benchmarks --
+#[cfg(test)]
+mod bench {
+    use super::*;
 
     // Benchmarks
     extern crate test;
     #[bench]
     #[ignore]
-    fn part1_bench(b: &mut test::Bencher) {
+    fn part1_solution(b: &mut test::Bencher) {
         Day::benchmark(aoc::Part::ONE, b)
     }
     #[bench]
     #[ignore]
-    fn part2_bench(b: &mut test::Bencher) {
+    fn part2_solution(b: &mut test::Bencher) {
         Day::benchmark(aoc::Part::TWO, b)
     }
 }
