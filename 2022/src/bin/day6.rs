@@ -68,32 +68,25 @@ mod tests {
 }
 
 // -- Helpers --
-fn is_start_marker(window: &[char]) -> bool {
+fn is_start_marker((index, window): (usize, &[u8])) -> Option<usize> {
     for i in 0..window.len() {
         for j in i+1..window.len() {
             if window[i] == window[j] {
-                return false;
+                return None;
             }
         }
     }
 
-    return true;
+    return Some(index + window.len());
 }
 
 fn solution(input: &str, length: usize) -> usize {
     input
-        .chars()
-        .collect::<Vec<_>>()
+        .as_bytes()
         .windows(length)
-        .map(is_start_marker)
         .enumerate()
-        .find_map(|(i, a)| {
-            if a {
-                Some(i+length)
-            } else {
-                None
-            }
-        }).expect("Invalid input")
+        .find_map(is_start_marker)
+        .expect("Invalid input")
 }
 
 // -- Solution --
