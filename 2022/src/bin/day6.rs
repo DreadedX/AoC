@@ -31,6 +31,10 @@ mod tests {
     fn part1_test5() -> Result<()> {
         Day::test(aoc::Part::ONE, "test-5", 11)
     }
+    #[test]
+    fn part1_solution() -> Result<()> {
+        Day::test(aoc::Part::ONE, "input", 1275)
+    }
 
     #[test]
     fn part2_test1() -> Result<()> {
@@ -51,6 +55,10 @@ mod tests {
     #[test]
     fn part2_test5() -> Result<()> {
         Day::test(aoc::Part::TWO, "test-5", 26)
+    }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(aoc::Part::TWO, "input", 3605)
     }
 
     // Benchmarks
