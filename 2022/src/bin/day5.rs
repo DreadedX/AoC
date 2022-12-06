@@ -172,17 +172,17 @@ impl FromStr for Instruction {
 
 // -- Helpers --
 fn solution(input: &str, part1: bool) -> String {
+    let (boat, moves) = input.split_once("\n\n").expect("Input is invalid");
+
     // The current layout description ends with an empty line
-    let mut boat: Boat = input.lines()
-                             .take_while(|line| !line.is_empty())
+    let mut boat: Boat = boat.lines()
                              .collect::<Vec<_>>()
                              .into();
 
     // Each instruction starts with an 'm'
-    input
+    moves
         .lines()
-        .skip_while(|line| !line.starts_with('m'))
-        .map(|line| line.parse().unwrap())
+        .map(|line| line.parse().expect("Input is invalid"))
         .for_each(|i: Instruction| {
             let mut taken = boat.take(i.from, i.amount);
             if part1 {
