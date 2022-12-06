@@ -91,14 +91,17 @@ impl fmt::Display for Boat {
     }
 }
 
-impl From<Vec<&str>> for Boat {
-    fn from(lines: Vec<&str>) -> Self {
+impl FromStr for Boat {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"\[[A-Z]\]").unwrap();
         }
 
         let mut boat = Self{stacks: HashMap::new()};
-        for line in lines {
+
+        s.lines().rev().for_each(|line| {
             for mat in RE.find_iter(line) {
                 let index = mat.start() / 4 + 1;
                 // based on the pattern [.] we get the second char
@@ -106,14 +109,9 @@ impl From<Vec<&str>> for Boat {
 
                 boat.push(index, Crate{letter});
             }
-        }
+        });
 
-        // Because of how we load the data, each stack is upside down
-        for stack in boat.stacks.iter_mut() {
-            stack.1.reverse()
-        }
-
-        return boat;
+        Ok(boat)
     }
 }
 
@@ -174,15 +172,10 @@ impl FromStr for Instruction {
 fn solution(input: &str, part1: bool) -> String {
     let (boat, moves) = input.split_once("\n\n").expect("Input is invalid");
 
-    // The current layout description ends with an empty line
-    let mut boat: Boat = boat.lines()
-                             .collect::<Vec<_>>()
-                             .into();
+    let mut boat: Boat = boat.parse().expect("Invalid input");
 
-    // Each instruction starts with an 'm'
-    moves
-        .lines()
-        .map(|line| line.parse().expect("Input is invalid"))
+    moves.lines()
+        .map(|line| line.parse().expect("Invalid input"))
         .for_each(|i: Instruction| {
             let mut taken = boat.take(i.from, i.amount);
             if part1 {
