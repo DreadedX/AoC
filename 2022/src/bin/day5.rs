@@ -1,6 +1,6 @@
 #![feature(test)]
 use core::fmt;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 use lazy_static::lazy_static;
 
 use regex::Regex;
@@ -91,13 +91,13 @@ impl fmt::Display for Boat {
     }
 }
 
-impl Boat {
-    fn new(lines: &Vec<&str>) -> Boat {
+impl From<Vec<&str>> for Boat {
+    fn from(lines: Vec<&str>) -> Self {
         lazy_static! {
             static ref RE: Regex = Regex::new(r"\[[A-Z]\]").unwrap();
         }
 
-        let mut boat = Boat{stacks: HashMap::new()};
+        let mut boat = Self{stacks: HashMap::new()};
         for line in lines {
             for mat in RE.find_iter(line) {
                 let index = mat.start() / 4 + 1;
@@ -115,10 +115,12 @@ impl Boat {
 
         return boat;
     }
+}
 
+impl Boat {
     fn take(&mut self, index: usize, amount: usize) -> Vec<Crate> {
         let stack = self.stacks.entry(index).or_default();
-        stack.split_off(stack.len()-amount)
+        stack.split_off(stack.len()-amount as usize)
     }
 
     fn put(&mut self, index: usize, mut vec: Vec<Crate>) {
@@ -141,42 +143,54 @@ impl Boat {
     }
 }
 
-// -- Helpers --
-fn parse_instruction(s: &str) -> (usize, usize, usize) {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"move (?P<amount>[0-9]+) from (?P<from>[0-9]) to (?P<to>[0-9])").unwrap();
-    }
-
-    let capture = RE.captures(s).unwrap();
-
-    let parse_number = |name| capture.name(name).unwrap().as_str().parse::<usize>().unwrap();
-    let amount: usize = parse_number("amount");
-    let from: usize = parse_number("from");
-    let to: usize = parse_number("to");
-
-    (amount, from, to)
+struct Instruction {
+    amount: usize,
+    from: usize,
+    to: usize,
 }
 
+impl FromStr for Instruction {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"move (?P<amount>[0-9]+) from (?P<from>[0-9]) to (?P<to>[0-9])").unwrap();
+        }
+
+        let capture = RE.captures(s).unwrap();
+
+        let parse = |name| capture.name(name).unwrap().as_str().parse();
+
+        let amount = parse("amount")?;
+        let from = parse("from")?;
+        let to = parse("to")?;
+
+        Ok(Instruction{amount, from, to})
+
+    }
+}
+
+// -- Helpers --
 fn solution(input: &str, part1: bool) -> String {
     // The current layout description ends with an empty line
-    let mut boat = Boat::new(&input
-                             .lines()
+    let mut boat: Boat = input.lines()
                              .take_while(|line| !line.is_empty())
-                             .collect());
+                             .collect::<Vec<_>>()
+                             .into();
 
     // Each instruction starts with an 'm'
     input
         .lines()
         .skip_while(|line| !line.starts_with('m'))
-        .map(parse_instruction)
-        .for_each(|(amount, from, to)| {
-            let mut taken = boat.take(from, amount);
+        .map(|line| line.parse().unwrap())
+        .for_each(|i: Instruction| {
+            let mut taken = boat.take(i.from, i.amount);
             if part1 {
                 // In part one we move the crates on by one, so the vector needs to be reverse to
                 // get the correct order
                 taken.reverse();
             }
-            boat.put(to, taken);
+            boat.put(i.to, taken);
         });
 
     boat.to_string()
