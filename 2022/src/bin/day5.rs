@@ -21,12 +21,12 @@ mod tests {
         Day::test(aoc::Part::ONE, "test-1", "CMZ".to_string())
     }
     #[test]
-    fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", "MCD".to_string())
-    }
-    #[test]
     fn part1_solution() -> Result<()> {
         Day::test(aoc::Part::ONE, "input", "RNZLFZSJH".to_string())
+    }
+    #[test]
+    fn part2_test1() -> Result<()> {
+        Day::test(aoc::Part::TWO, "test-1", "MCD".to_string())
     }
     #[test]
     fn part2_solution() -> Result<()> {

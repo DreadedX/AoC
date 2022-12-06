@@ -16,12 +16,12 @@ mod tests {
         Day::test(aoc::Part::ONE, "test-1", 15)
     }
     #[test]
-    fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 12)
-    }
-    #[test]
     fn part1_solution() -> Result<()> {
         Day::test(aoc::Part::ONE, "input", 14264)
+    }
+    #[test]
+    fn part2_test1() -> Result<()> {
+        Day::test(aoc::Part::TWO, "test-1", 12)
     }
     #[test]
     fn part2_solution() -> Result<()> {
