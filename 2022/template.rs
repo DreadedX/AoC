@@ -1,3 +1,4 @@
+#![feature(test)]
 use anyhow::Result;
 use aoc::Solver;
 
@@ -13,6 +14,19 @@ mod tests {
     #[test]
     fn part1_test1() -> Result<()> {
         Day::test(aoc::Part::ONE, "test-1", TEST)
+    }
+
+    // Benchmarks
+    extern crate test;
+    #[bench]
+    #[ignore]
+    fn part1_bench(b: &mut test::Bencher) {
+        Day::benchmark(aoc::Part::ONE, b)
+    }
+    #[bench]
+    #[ignore]
+    fn part2_bench(b: &mut test::Bencher) {
+        Day::benchmark(aoc::Part::TWO, b)
     }
 }
 

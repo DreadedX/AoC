@@ -1,3 +1,4 @@
+#![feature(test)]
 use core::fmt;
 use std::collections::HashMap;
 use lazy_static::lazy_static;
@@ -30,6 +31,19 @@ mod tests {
     #[test]
     fn part2_solution() -> Result<()> {
         Day::test(aoc::Part::TWO, "input", "CNSFCGJSM".to_string())
+    }
+
+    // Benchmarks
+    extern crate test;
+    #[bench]
+    #[ignore]
+    fn part1_bench(b: &mut test::Bencher) {
+        Day::benchmark(aoc::Part::ONE, b)
+    }
+    #[bench]
+    #[ignore]
+    fn part2_bench(b: &mut test::Bencher) {
+        Day::benchmark(aoc::Part::TWO, b)
     }
 }
 
