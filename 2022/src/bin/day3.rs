@@ -1,5 +1,5 @@
 use anyhow::Result;
-use aoc::{Solver, Output};
+use aoc::Solver;
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -12,19 +12,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", Output::Number(157))
+        Day::test(aoc::Part::ONE, "test-1", 157)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", Output::Number(70))
+        Day::test(aoc::Part::TWO, "test-1", 70)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", Output::Number(8298))
+        Day::test(aoc::Part::ONE, "input", 8298)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", Output::Number(2708))
+        Day::test(aoc::Part::TWO, "input", 2708)
     }
 }
 
@@ -56,12 +56,13 @@ fn find_common(group: &[&str]) -> char {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
+    type Output = u32;
     fn day() -> u8 {
         3
     }
 
-    fn part1(input: &str) -> Output {
-        let result = input.lines()
+    fn part1(input: &str) -> Self::Output {
+        input.lines()
             .map(|line| line.split_at(line.len()/2))
             .map(|(a, b)| {
                 for c in a.chars() {
@@ -73,19 +74,15 @@ impl aoc::Solver for Day {
                 unreachable!("No characters in common, this should never happen")
             })
             .map(convert)
-            .sum();
-
-        Output::Number(result)
+            .sum()
     }
 
-    fn part2(input: &str) -> Output {
-        let result = input.lines()
+    fn part2(input: &str) -> Self::Output {
+        input.lines()
             .collect::<Vec<_>>()
             .chunks(3)
             .map(find_common)
             .map(convert)
-            .sum();
-
-        Output::Number(result)
+            .sum()
     }
 }

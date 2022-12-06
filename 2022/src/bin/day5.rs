@@ -4,7 +4,7 @@ use lazy_static::lazy_static;
 
 use regex::Regex;
 use anyhow::Result;
-use aoc::{Solver, Output};
+use aoc::Solver;
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -17,19 +17,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", Output::String("CMZ".to_string()))
+        Day::test(aoc::Part::ONE, "test-1", "CMZ".to_string())
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", Output::String("MCD".to_string()))
+        Day::test(aoc::Part::TWO, "test-1", "MCD".to_string())
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", Output::String("RNZLFZSJH".to_string()))
+        Day::test(aoc::Part::ONE, "input", "RNZLFZSJH".to_string())
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", Output::String("CNSFCGJSM".to_string()))
+        Day::test(aoc::Part::TWO, "input", "CNSFCGJSM".to_string())
     }
 }
 
@@ -123,7 +123,7 @@ fn parse_instruction(s: &str) -> (usize, usize, usize) {
     (amount, from, to)
 }
 
-fn solution(input: &str, reverse: bool) -> Output {
+fn solution(input: &str, reverse: bool) -> String {
     // The current layout description ends with an empty line
     let mut boat = Boat::new(&input
                              .lines()
@@ -145,21 +145,22 @@ fn solution(input: &str, reverse: bool) -> Output {
             boat.put(to, taken);
         });
 
-    Output::String(boat.to_string())
+    boat.to_string()
 }
 
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
+    type Output = String;
     fn day() -> u8 {
         5
     }
 
-    fn part1(input: &str) -> Output {
+    fn part1(input: &str) -> Self::Output {
         solution(input, true)
     }
 
-    fn part2(input: &str) -> Output {
+    fn part2(input: &str) -> Self::Output {
         solution(input, false)
     }
 }
