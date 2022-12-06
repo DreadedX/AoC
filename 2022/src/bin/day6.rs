@@ -1,7 +1,6 @@
 #![feature(test)]
 use anyhow::Result;
 use aoc::Solver;
-use itertools::Itertools;
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -70,7 +69,15 @@ mod tests {
 
 // -- Helpers --
 fn is_start_marker(window: &[char]) -> bool {
-    window.len() == window.iter().unique().count()
+    for i in 0..window.len() {
+        for j in i+1..window.len() {
+            if window[i] == window[j] {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 fn solution(input: &str, length: usize) -> usize {
