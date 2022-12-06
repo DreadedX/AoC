@@ -76,25 +76,24 @@ mod tests {
 }
 
 // -- Helpers --
-fn is_start_marker((index, window): (usize, &[u8])) -> Option<usize> {
+fn is_start_marker(window: &[u8]) -> bool {
     for i in 0..window.len() {
         for j in i+1..window.len() {
             if window[i] == window[j] {
-                return None;
+                return false;
             }
         }
     }
 
-    return Some(index + window.len());
+    return true;
 }
 
 fn solution(input: &str, length: usize) -> usize {
     input
         .as_bytes()
         .windows(length)
-        .enumerate()
-        .find_map(is_start_marker)
-        .expect("Invalid input")
+        .position(is_start_marker)
+        .expect("Invalid input") + length
 }
 
 // -- Solution --
