@@ -75,8 +75,7 @@ fn overlaps((a, b): &(Elf, Elf)) -> bool {
 // Transform from line to pair of Elfs
 fn transform(s: &str) -> (Elf, Elf) {
     let transformed = s
-        .replace("-", ",")
-        .split(',')
+        .split([',', '-'])
         .flat_map(|value| value.parse::<u32>())
         .collect::<Vec<_>>();
 
