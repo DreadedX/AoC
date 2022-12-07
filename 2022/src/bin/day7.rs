@@ -1,9 +1,7 @@
 #![feature(test)]
-use core::fmt;
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
-
 use anyhow::Result;
 use aoc::Solver;
+use implementation::Node;
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -45,111 +43,106 @@ mod tests {
     }
 }
 
-// -- Implentation --
-#[derive(Default)]
-struct Node {
-    // Size of all files in this directory
-    file_size: u32,
-    nodes: HashMap<String, Rc<RefCell<Node>>>,
-    parent: Option<Rc<RefCell<Node>>>,
-}
+mod implementation {
+    use std::collections::HashMap;
 
-impl Node {
-    fn add_file(&mut self, size: u32) {
-        self.file_size += size
+    pub struct Node {
+        size: u32,
+        children: HashMap<String, Self>,
+        parent: *mut Self,
     }
 
-    fn add_directory(&mut self, name: String, node: Rc<RefCell<Node>>) {
-        self.nodes.insert(name, node);
-    }
-
-    fn get_directory(&self, name: &str) -> Option<Rc<RefCell<Node>>> {
-        match self.nodes.get(name) {
-            Some(node) => Some(Rc::clone(node)),
-            None => None,
-        }
-    }
-
-    fn get_parent(&mut self) -> Option<Rc<RefCell<Node>>> {
-        match &self.parent {
-            Some(parent) => Some(Rc::clone(parent)),
-            None => None
-        }
-    }
-
-    fn get_size(&self) -> u32 {
-        let mut size = self.file_size;
-
-        for (_, node) in &self.nodes {
-            size += node.borrow_mut().get_size()
-        }
-
-        size
-    }
-
-    fn get_sizes_flat(&self) -> Vec<u32> {
-        let mut dirs = vec![self.get_size()];
-
-        for (_, node) in &self.nodes {
-            dirs.extend(node.borrow_mut().get_sizes_flat())
-        }
-
-        dirs
-    }
-}
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}\n", self.get_size())?;
-        for (name, node) in &self.nodes {
-            write!(f, "{}: {}", name, node.borrow_mut())?;
-        }
-
-        Ok(())
-    }
-}
-
-// -- Helpers --
-fn parse(input: &str) -> Rc<RefCell<Node>> {
-    let root = Rc::new(RefCell::new(Node::default()));
-    let mut current = Rc::clone(&root);
-
-    input
-        .lines()
-        .flat_map(|line| line.split_once(" "))
-        .for_each(|(typ, rest)| {
-            match typ {
-                "$" => {
-                    // There are two cmds: ls, cd ${dir}, we only care about dir
-                    if let Some((_, dir)) = rest.split_once(" ") {
-                        match dir {
-                            "/" => current = {
-                                Rc::clone(&root)
-                            },
-                            ".." => {
-                                let parent = current.borrow_mut().get_parent().unwrap();
-                                current = parent;
-                            }
-                            name => {
-                                let dir = current.borrow_mut().get_directory(name).unwrap();
-                                current = dir;
-                            },
-                        };
-                    }
-                },
-                "dir" => {
-                    let dir = Rc::new(RefCell::new(Node::default()));
-                    dir.borrow_mut().parent = Some(Rc::clone(&current));
-                    current.borrow_mut().add_directory(rest.to_owned(), Rc::clone(&dir));
-                },
-                size => {
-                    current.borrow_mut().add_file(size.parse().unwrap())
-                },
-
+    impl Node {
+        pub fn default() -> Self {
+            Self {
+                size: 0,
+                children: HashMap::new(),
+                parent: std::ptr::null_mut(),
             }
-        });
+        }
 
-    root
+        pub fn new(input: &str) -> Self {
+            let mut root = Node::default();
+            let mut current = &mut root as *mut Node;
+
+            input
+                .lines()
+                .flat_map(|line| line.split_once(" "))
+                .for_each(|(typ, rest)| {
+                    match typ {
+                        "$" => {
+                            // There are two cmds: ls, cd ${dir}, we only care about dir
+                            if let Some((_, dir)) = rest.split_once(" ") {
+                                match dir {
+                                    "/" => current = &mut root as *mut Node,
+                                    ".." => {
+                                        unsafe {
+                                            let parent = (*current).parent;
+                                            if parent == std::ptr::null_mut() {
+                                                panic!("Node has no parent")
+                                            }
+                                            current = parent;
+                                        }
+                                    }
+                                    name => {
+                                        unsafe {
+                                            current = (*current).get_directory(name).unwrap();
+                                        }
+                                    },
+                                };
+                            }
+                        },
+                        "dir" => {
+                            unsafe {
+                                (*current).add_directory(rest.to_owned())
+                            }
+                        },
+                        size => {
+                            unsafe {
+                                (*current).add_file(size.parse().unwrap())
+                            }
+                        },
+
+                    }
+                });
+
+            root
+        }
+
+        fn add_file(&mut self, size: u32) {
+            self.size += size;
+        }
+
+        fn add_directory(&mut self, name: String) {
+            let mut child = Self::default();
+            child.parent = self as *mut Self;
+            self.children.insert(name, child);
+        }
+
+        fn get_directory(&mut self, name: &str) -> Option<&mut Self> {
+            self.children.get_mut(name)
+        }
+
+        pub fn get_size(&self) -> u32 {
+            let mut size = self.size;
+
+            for (_, node) in &self.children {
+                size += node.get_size();
+            }
+
+            size
+        }
+
+        pub fn flatten_sizes(&self) -> Vec<u32> {
+            let mut dirs = vec![self.get_size()];
+
+            for (_, node) in &self.children {
+                dirs.extend(node.flatten_sizes())
+            }
+
+            dirs
+        }
+    }
 }
 
 // -- Solution --
@@ -161,21 +154,18 @@ impl aoc::Solver for Day {
     }
 
     fn part1(input: &str) -> Self::Output {
-        let root = parse(input);
-
-        let sizes = root.borrow_mut().get_sizes_flat();
-        sizes.iter()
+        Node::new(input)
+            .flatten_sizes()
+            .iter()
             .filter(|&&size| size < 100000)
             .sum()
     }
 
     fn part2(input: &str) -> Self::Output {
-        let root = parse(input);
+        let root = Node::new(input);
+        let need_to_free = root.get_size() - 40000000;
 
-        let mut sizes = root.borrow_mut().get_sizes_flat();
-
-        let need_to_free = sizes[0] - 40000000;
-
+        let mut sizes = root.flatten_sizes();
         sizes.sort();
         sizes.iter()
             .find_map(|&size| {
