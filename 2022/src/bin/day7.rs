@@ -67,42 +67,27 @@ mod implementation {
 
             input
                 .lines()
-                .flat_map(|line| line.split_once(" "))
-                .for_each(|(typ, rest)| {
-                    match typ {
-                        "$" => {
-                            // There are two cmds: ls, cd ${dir}, we only care about dir
-                            if let Some((_, dir)) = rest.split_once(" ") {
-                                match dir {
-                                    "/" => current = &mut root as *mut Node,
-                                    ".." => {
-                                        unsafe {
-                                            let parent = (*current).parent;
-                                            if parent == std::ptr::null_mut() {
-                                                panic!("Node has no parent")
-                                            }
-                                            current = parent;
-                                        }
-                                    }
-                                    name => {
-                                        unsafe {
-                                            current = (*current).get_directory(name).unwrap();
-                                        }
-                                    },
-                                };
+                .map(|line| line.rsplit_once(" ").unwrap())
+                .for_each(|split| {
+                    match split {
+                        ("$ cd", "/") => current = &mut root as *mut Node,
+                        ("$ cd", "..") => unsafe {
+                            let parent = (*current).parent;
+                            if parent == std::ptr::null_mut() {
+                                panic!("Node has no parent")
                             }
+                            current = parent;
                         },
-                        "dir" => {
-                            unsafe {
-                                (*current).add_directory(rest.to_owned())
-                            }
+                        ("$ cd", name) => unsafe {
+                            current = (*current).get_directory(name).unwrap();
                         },
-                        size => {
-                            unsafe {
-                                (*current).add_file(size.parse().unwrap())
-                            }
+                        ("$", "ls") => {},
+                        ("dir", name) => unsafe {
+                            (*current).add_directory(name.to_owned())
                         },
-
+                        (size, _name) => unsafe {
+                            (*current).add_file(size.parse().unwrap())
+                        },
                     }
                 });
 
