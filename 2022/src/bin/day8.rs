@@ -1,4 +1,7 @@
 #![feature(test)]
+use core::fmt;
+use std::ptr;
+
 use anyhow::Result;
 use aoc::Solver;
 
@@ -41,31 +44,27 @@ mod tests {
         Day::benchmark(aoc::Part::TWO, b)
     }
 }
-// -- Helper --
-fn parse(input: &str) -> (usize, Vec<u32>) {
+// -- Helpers --
+fn parse(input: &str) -> (usize, Vec<Vec<u32>>) {
     let size = input.lines().count();
     let input = input
         .lines()
-        .flat_map(|line| line.chars().map(|c| c.to_digit(10).unwrap()).collect::<Vec<_>>())
+        .map(|line| line.chars().filter_map(|c| c.to_digit(10)).collect::<Vec<_>>())
         .collect::<Vec<_>>();
 
     (size, input)
 }
 
-fn find_highest(size: usize, highest: &mut u32, row: usize, column: usize, tree: u32) -> bool {
-    match (row, column, tree) {
-        (r, _, _) if r == 0 => true,
-        (r, _, _) if r == size-1 => true,
-        (_, c, tree) if c == 0 => {
-            *highest = tree;
+fn is_visible(size: usize, highest: &mut u32, height: u32, y: usize, x: usize) -> bool {
+    match (y, x, height) {
+        (r, _, _) if r == 0 || r == size-1 => true,
+        (_, c, _) if c == 0 || c == size-1 => {
+            *highest = height;
             true
         },
-        (_, c, _) if c == size-1 => {
-            true
-        },
-        (_ ,_, tree) => {
-            if tree > *highest {
-                *highest = tree;
+        (_, _, h) => {
+            if h > *highest {
+                *highest = h;
                 true
             } else {
                 false
@@ -74,72 +73,44 @@ fn find_highest(size: usize, highest: &mut u32, row: usize, column: usize, tree:
     }
 }
 
-// @TODO Figure out if we can do this faster
-fn transponse<T: Copy>(size: usize, input: &Vec<T>) -> Vec<T> {
-    let mut output = Vec::new();
-    output.reserve(input.len());
+// Consume the vector and perform the transpose by swapping around elements
+fn transpose<T: Copy + fmt::Display>(size: usize, mut input: Vec<Vec<T>>) -> Vec<Vec<T>> {
+    for y in 0..size {
+        for x in 0..y {
+            unsafe {
+                let pa: *mut T = &mut input[x][y];
+                let pb: *mut T = &mut input[y][x];
 
-    for c in 0..size {
-        for r in 0..size {
-            output.push(input[r*size + c]);
+                ptr::swap(pa, pb);
+            }
         }
     }
 
-    output
+    input
 }
 
-fn process_row_reverse((row, line): (usize, &[u32])) -> Vec<bool> {
-    let size = line.len();
-    let mut line = line
-        .iter()
-        .rev()
+fn process_1d(input: &Vec<Vec<u32>>) -> Vec<Vec<bool>> {
+    input.iter()
         .enumerate()
-        .scan(0, |highest, (column, tree)| { Some(find_highest(size, highest, row, column, *tree)) })
-        .collect::<Vec<_>>();
+        .map(|(y, row)| {
+            let size = row.len();
+            let left = row.iter()
+                .enumerate()
+                .scan(0, |mut highest, (x, &height)| Some(is_visible(size, &mut highest, height, y, x)));
 
-    line.reverse();
-    line
-}
+            let mut right = row.iter()
+                .enumerate()
+                .rev()
+                .scan(0, |mut highest, (x, &height)| Some(is_visible(size, &mut highest, height, y, x)))
+                .collect::<Vec<_>>();
 
-fn process_row((row, line): (usize, &[u32])) -> Vec<bool> {
-    let size = line.len();
-    line
-        .iter()
-        .enumerate()
-        .scan(0, |highest, (column, tree)| { Some(find_highest(size, highest, row, column, *tree)) })
-        .collect::<Vec<_>>()
-}
+            right.reverse();
 
-fn generate_highest(size: usize, input: &Vec<u32>) -> Vec<bool> {
-    let from_left = input
-        .chunks(size)
-        .enumerate()
-        .flat_map(process_row);
+            left.zip(right.iter())
+                .map(|(left, &right)| left || right)
+                .collect::<Vec<_>>()
 
-    let from_right = input
-        .chunks(size)
-        .enumerate()
-        .flat_map(process_row_reverse);
-
-    let input = transponse(size, &input);
-    let from_top = input
-        .chunks(size)
-        .enumerate()
-        .flat_map(process_row);
-
-    let from_bottom = input
-        .chunks(size)
-        .enumerate()
-        .flat_map(process_row_reverse);
-
-    let horizontal = from_top.zip(from_bottom).map(|(top, bottom)| top || bottom).collect::<Vec<_>>();
-    let horizontal = transponse(size, &horizontal);
-
-    from_left
-        .zip(from_right)
-        .zip(horizontal.iter())
-        .map(|((left, right), horizontal)| left || right || *horizontal)
-        .collect::<Vec<_>>()
+        }).collect()
 }
 
 // -- Solution --
@@ -152,90 +123,62 @@ impl aoc::Solver for Day {
 
     fn part1(input: &str) -> Self::Output {
         let (size, input) = parse(input);
-        generate_highest(size, &input)
-            .iter()
-            .fold(0, |acc, value| {
-                if *value {
-                    acc+1
-                } else {
-                    acc
-                }
-            })
+
+        let horizontal = process_1d(&input);
+        let vertical = transpose(size, process_1d(&transpose(size, input)));
+
+        horizontal.iter().flatten().zip(vertical.iter().flatten()).filter(|(&horizontal, &vertical)| horizontal || vertical).count()
     }
 
     fn part2(input: &str) -> Self::Output {
         let (size, input) = parse(input);
-        let map = generate_highest(size, &input);
 
-        map
-            .chunks(size)
-            .enumerate()
-            .flat_map(|(row, line)| line.iter().map(|value| (row, value)).enumerate().collect::<Vec<_>>())
-            .filter_map(|(column, (row, value))| if *value {
-                Some((row, column))
-            } else {
-                None
-            }).map(|(row, column)| {
-                if row == 0 || row == size-1 || column == 0 || column == size-1 {
-                    // Value is going to be set to 0
-                    return 0;
-                }
-                let height = input[row*size + column];
+        let mut score_highest = 0;
+        for y in 0..size {
+            for x in 0..size {
+                let height = input[y][x];
 
                 let mut distance_left = 0;
-                {
-                    for (idx, c) in (0..column).rev().enumerate() {
-                        if input[row*size + c] >= height {
-                            distance_left = idx + 1;
-                            break;
-                        }
-                    }
-                    if distance_left == 0 {
-                        distance_left = column;
-                    }
-                }
-
                 let mut distance_right = 0;
-                {
-                    for (idx, c) in (column+1..size).enumerate() {
-                        if input[row*size + c] >= height {
-                            distance_right = idx+1;
-                            break;
-                        }
-                    }
-                    if distance_right == 0 {
-                        distance_right = size-column-1;
-                    }
-                }
-
                 let mut distance_up = 0;
-                {
-                    for (idx, r) in (0..row).rev().enumerate() {
-                        if input[r*size + column] >= height {
-                            distance_up = idx + 1;
-                            break;
-                        }
-                    }
-                    if distance_up == 0 {
-                        distance_up = row;
-                    }
-                }
-
-
                 let mut distance_down = 0;
-                {
-                    for (idx, r) in (row+1..size).enumerate() {
-                        if input[r*size + column] >= height {
-                            distance_down = idx+1;
-                            break;
-                        }
-                    }
-                    if distance_down == 0 {
-                        distance_down = size-row-1;
+
+                for c in (0..x).rev() {
+                    distance_left += 1;
+                    if input[y][c] >= height {
+                        break;
                     }
                 }
 
-                distance_up * distance_left * distance_down * distance_right
-            }).max().unwrap()
+                for c in x+1..size {
+                    distance_right += 1;
+                    if input[y][c] >= height {
+                        break;
+                    }
+                }
+
+                for r in (0..y).rev() {
+                    distance_up += 1;
+                    if input[r][x] >= height {
+                        break;
+                    }
+                }
+
+                for r in y+1..size {
+                    distance_down += 1;
+                    if input[r][x] >= height {
+                        break;
+                    }
+                }
+
+                let score = distance_up * distance_left * distance_down * distance_right;
+
+                if score > score_highest {
+                    score_highest = score
+                }
+            }
+        }
+
+        score_highest
     }
 }
