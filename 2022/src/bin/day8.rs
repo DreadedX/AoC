@@ -45,37 +45,25 @@ mod tests {
     }
 }
 // -- Helpers --
-fn parse(input: &str) -> (usize, Vec<Vec<u32>>) {
-    let size = input.lines().count();
-    let input = input
+fn parse(input: &str) -> Vec<Vec<i32>> {
+    input
         .lines()
-        .map(|line| line.chars().filter_map(|c| c.to_digit(10)).collect::<Vec<_>>())
-        .collect::<Vec<_>>();
-
-    (size, input)
+        .map(|line| line.chars().filter_map(|c| c.to_digit(10)).map(|d| d as i32).collect::<Vec<_>>())
+        .collect::<Vec<_>>()
 }
 
-fn is_visible(size: usize, highest: &mut u32, height: u32, y: usize, x: usize) -> bool {
-    match (y, x, height) {
-        (r, _, _) if r == 0 || r == size-1 => true,
-        (_, c, _) if c == 0 || c == size-1 => {
-            *highest = height;
-            true
-        },
-        (_, _, h) => {
-            if h > *highest {
-                *highest = h;
-                true
-            } else {
-                false
-            }
-        }
+fn is_visible(highest: &mut i32, height: i32) -> Option<bool> {
+    if height > *highest {
+        *highest = height;
+        Some(true)
+    } else {
+        Some(false)
     }
 }
 
 // Consume the vector and perform the transpose by swapping around elements
-fn transpose<T: Copy + fmt::Display>(size: usize, mut input: Vec<Vec<T>>) -> Vec<Vec<T>> {
-    for y in 0..size {
+fn transpose<T: Copy + fmt::Display>( mut input: Vec<Vec<T>>) -> Vec<Vec<T>> {
+    for y in 0..input.len() {
         for x in 0..y {
             unsafe {
                 let pa: *mut T = &mut input[x][y];
@@ -89,27 +77,20 @@ fn transpose<T: Copy + fmt::Display>(size: usize, mut input: Vec<Vec<T>>) -> Vec
     input
 }
 
-fn process_1d(input: &Vec<Vec<u32>>) -> Vec<Vec<bool>> {
+fn process_1d(input: &Vec<Vec<i32>>) -> Vec<Vec<bool>> {
     input.iter()
-        .enumerate()
-        .map(|(y, row)| {
-            let size = row.len();
-            let left = row.iter()
-                .enumerate()
-                .scan(0, |mut highest, (x, &height)| Some(is_visible(size, &mut highest, height, y, x)));
-
+        .map(|row| {
             let mut right = row.iter()
-                .enumerate()
                 .rev()
-                .scan(0, |mut highest, (x, &height)| Some(is_visible(size, &mut highest, height, y, x)))
+                .scan(-1, |mut highest, &height| is_visible(&mut highest, height))
                 .collect::<Vec<_>>();
-
             right.reverse();
 
-            left.zip(right.iter())
+            row.iter()
+                .scan(-1, |mut highest, &height| is_visible(&mut highest, height))
+                .zip(right.iter())
                 .map(|(left, &right)| left || right)
                 .collect::<Vec<_>>()
-
         }).collect()
 }
 
@@ -122,20 +103,20 @@ impl aoc::Solver for Day {
     }
 
     fn part1(input: &str) -> Self::Output {
-        let (size, input) = parse(input);
+        let input = parse(input);
 
         let horizontal = process_1d(&input);
-        let vertical = transpose(size, process_1d(&transpose(size, input)));
+        let vertical = transpose(process_1d(&transpose(input)));
 
         horizontal.iter().flatten().zip(vertical.iter().flatten()).filter(|(&horizontal, &vertical)| horizontal || vertical).count()
     }
 
     fn part2(input: &str) -> Self::Output {
-        let (size, input) = parse(input);
+        let input = parse(input);
 
         let mut score_highest = 0;
-        for y in 0..size {
-            for x in 0..size {
+        for y in 0..input.len() {
+            for x in 0..input[y].len() {
                 let height = input[y][x];
 
                 let mut distance_left = 0;
@@ -150,7 +131,7 @@ impl aoc::Solver for Day {
                     }
                 }
 
-                for c in x+1..size {
+                for c in x+1..input[y].len() {
                     distance_right += 1;
                     if input[y][c] >= height {
                         break;
@@ -164,7 +145,7 @@ impl aoc::Solver for Day {
                     }
                 }
 
-                for r in y+1..size {
+                for r in y+1..input[y].len() {
                     distance_down += 1;
                     if input[r][x] >= height {
                         break;
