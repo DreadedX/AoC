@@ -19,19 +19,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", "CMZ".to_string())
+        Day::test(Day::part1, "test-1", "CMZ".to_string())
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", "RNZLFZSJH".to_string())
+        Day::test(Day::part1, "input", "RNZLFZSJH".to_string())
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", "MCD".to_string())
+        Day::test(Day::part2, "test-1", "MCD".to_string())
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", "CNSFCGJSM".to_string())
+        Day::test(Day::part2, "input", "CNSFCGJSM".to_string())
     }
 
     // Run it on a 6MB file to see how it performs
@@ -39,12 +39,12 @@ mod tests {
     #[test]
     #[ignore]
     fn part1_large() -> Result<()> {
-        Day::test(aoc::Part::ONE, "large", "GATHERING".to_string())
+        Day::test(Day::part1, "large", "GATHERING".to_string())
     }
     #[test]
     #[ignore]
     fn part2_large() -> Result<()> {
-        Day::test(aoc::Part::TWO, "large", "DEVSCHUUR".to_string())
+        Day::test(Day::part2, "large", "DEVSCHUUR".to_string())
     }
 }
 
@@ -58,12 +58,12 @@ mod bench {
     #[bench]
     #[ignore]
     fn part1_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -192,16 +192,17 @@ fn solution(input: &str, part1: bool) -> String {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = String;
+    type Output1 = String;
+    type Output2 = String;
     fn day() -> u8 {
         5
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         solution(input, true)
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         solution(input, false)
     }
 }

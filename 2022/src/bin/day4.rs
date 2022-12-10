@@ -14,19 +14,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 2)
+        Day::test(Day::part1, "test-1", 2)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 567)
+        Day::test(Day::part1, "input", 567)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 4)
+        Day::test(Day::part2, "test-1", 4)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 907)
+        Day::test(Day::part2, "input", 907)
     }
 }
 
@@ -40,12 +40,12 @@ mod bench {
     #[bench]
     #[ignore]
     fn part1_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -91,12 +91,13 @@ fn transform(s: &str) -> (Elf, Elf) {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = u32;
+    type Output1 = u32;
+    type Output2 = u32;
     fn day() -> u8 {
         4
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         input
             .lines()
             .map(transform)
@@ -104,7 +105,7 @@ impl aoc::Solver for Day {
             .count() as u32
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         input
             .lines()
             .map(transform)

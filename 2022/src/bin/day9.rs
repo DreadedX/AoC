@@ -16,23 +16,23 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 13)
+        Day::test(Day::part1, "test-1", 13)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 5695)
+        Day::test(Day::part1, "input", 5695)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 1)
+        Day::test(Day::part2, "test-1", 1)
     }
     #[test]
     fn part2_test2() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-2", 36)
+        Day::test(Day::part2, "test-2", 36)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 2434)
+        Day::test(Day::part2, "input", 2434)
     }
 
     // Benchmarks
@@ -40,12 +40,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -207,16 +207,17 @@ fn solution(input: &str, length: usize) -> usize {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = usize;
+    type Output1 = usize;
+    type Output2 = usize;
     fn day() -> u8 {
         9
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         solution(input, 2)
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         solution(input, 10)
     }
 }

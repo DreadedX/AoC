@@ -14,19 +14,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 24000)
+        Day::test(Day::part1, "test-1", 24000)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 70116)
+        Day::test(Day::part1, "input", 70116)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 45000)
+        Day::test(Day::part2, "test-1", 45000)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 206582)
+        Day::test(Day::part2, "input", 206582)
     }
 }
 
@@ -40,24 +40,25 @@ mod bench {
     #[bench]
     #[ignore]
     fn part1_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = u32;
+    type Output1 = u32;
+    type Output2 = u32;
     fn day() -> u8 {
         1
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         input.split("\n\n")
             .map(|elf| elf.lines()
                  .flat_map(|snack| snack.parse::<u32>())
@@ -66,7 +67,7 @@ impl aoc::Solver for Day {
             .unwrap()
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         let mut elfs: Vec<u32> = input.split("\n\n")
             .map(|elf| elf.lines()
                  .flat_map(|snack| snack.parse::<u32>())

@@ -16,19 +16,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 21)
+        Day::test(Day::part1, "test-1", 21)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 1845)
+        Day::test(Day::part1, "input", 1845)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 8)
+        Day::test(Day::part2, "test-1", 8)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 230112)
+        Day::test(Day::part2, "input", 230112)
     }
 
     // Benchmarks
@@ -36,12 +36,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 // -- Helpers --
@@ -97,12 +97,13 @@ fn process_1d(input: &Vec<Vec<i32>>) -> Vec<Vec<bool>> {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = usize;
+    type Output1 = usize;
+    type Output2 = usize;
     fn day() -> u8 {
         8
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         let input = parse(input);
 
         let horizontal = process_1d(&input);
@@ -111,7 +112,7 @@ impl aoc::Solver for Day {
         horizontal.iter().flatten().zip(vertical.iter().flatten()).filter(|(&horizontal, &vertical)| horizontal || vertical).count()
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         let input = parse(input);
 
         let mut score_highest = 0;

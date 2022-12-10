@@ -13,15 +13,31 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 13140)
+        Day::test(Day::part1, "test-1", 13140)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 13220)
+        Day::test(Day::part1, "input", 13220)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", -1)
+        Day::test(Day::part2, "test-1", r"##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....
+".to_owned())
+    }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(Day::part2, "input", r"###..#..#..##..#..#.#..#.###..####.#..#.
+#..#.#..#.#..#.#.#..#..#.#..#.#....#.#..
+#..#.#..#.#..#.##...####.###..###..##...
+###..#..#.####.#.#..#..#.#..#.#....#.#..
+#.#..#..#.#..#.#.#..#..#.#..#.#....#.#..
+#..#..##..#..#.#..#.#..#.###..####.#..#.
+".to_owned())
     }
 
     // Benchmarks
@@ -29,12 +45,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -80,12 +96,13 @@ fn parse(input: &str) -> Vec<Instruction> {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = isize;
+    type Output1 = isize;
+    type Output2 = String;
     fn day() -> u8 {
         10
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         let instructions = parse(input);
         let mut cpu = CPU::new();
 
@@ -107,31 +124,31 @@ impl aoc::Solver for Day {
         sum
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         let instructions = parse(input);
         let mut cpu = CPU::new();
 
         let mut cycle = 1;
+        let mut output = "".to_owned();
         for instruction in instructions {
             let (cycle_count, x) = cpu.execute(&instruction);
 
             for c in 0..cycle_count {
                 let ccm = (cycle + c - 1) % 40;
-                let mut sign = ' ';
+                let mut sign = ".";
                 if ccm-1 == x || ccm == x || ccm+1 == x {
-                    sign = '#';
+                    sign = "#";
                 }
-                print!("{}", sign);
+                output += sign;
 
                 if ccm == 39 {
-                    println!("");
+                    output += "\n";
                 }
             }
 
             cycle += cycle_count;
         }
 
-        // @TODO Figure out how we return this
-        0
+        output
     }
 }

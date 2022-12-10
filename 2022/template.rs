@@ -13,7 +13,7 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", TEST)
+        Day::test(Day::part1, "test-1", TEST)
     }
 
     // Benchmarks
@@ -33,16 +33,18 @@ mod tests {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = TYPE;
+    type Output1 = TYPE;
+    type Output2 = TYPE;
+
     fn day() -> u8 {
         DAY
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         DEFAULT
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         DEFAULT
     }
 }

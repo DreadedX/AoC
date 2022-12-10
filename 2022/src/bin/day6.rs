@@ -13,52 +13,52 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 7)
+        Day::test(Day::part1, "test-1", 7)
     }
     #[test]
     fn part1_test2() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-2", 5)
+        Day::test(Day::part1, "test-2", 5)
     }
     #[test]
     fn part1_test3() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-3", 6)
+        Day::test(Day::part1, "test-3", 6)
     }
     #[test]
     fn part1_test4() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-4", 10)
+        Day::test(Day::part1, "test-4", 10)
     }
     #[test]
     fn part1_test5() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-5", 11)
+        Day::test(Day::part1, "test-5", 11)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 1275)
+        Day::test(Day::part1, "input", 1275)
     }
 
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 19)
+        Day::test(Day::part2, "test-1", 19)
     }
     #[test]
     fn part2_test2() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-2", 23)
+        Day::test(Day::part2, "test-2", 23)
     }
     #[test]
     fn part2_test3() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-3", 23)
+        Day::test(Day::part2, "test-3", 23)
     }
     #[test]
     fn part2_test4() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-4", 29)
+        Day::test(Day::part2, "test-4", 29)
     }
     #[test]
     fn part2_test5() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-5", 26)
+        Day::test(Day::part2, "test-5", 26)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 3605)
+        Day::test(Day::part2, "input", 3605)
     }
 
     // Benchmarks
@@ -66,12 +66,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -99,16 +99,17 @@ fn solution(input: &str, length: usize) -> usize {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = usize;
+    type Output1 = usize;
+    type Output2 = usize;
     fn day() -> u8 {
         6
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         solution(input, 4)
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         solution(input, 14)
     }
 }

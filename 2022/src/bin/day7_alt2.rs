@@ -14,19 +14,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 95437)
+        Day::test(Day::part1, "test-1", 95437)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 2031851)
+        Day::test(Day::part1, "input", 2031851)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 24933642)
+        Day::test(Day::part2, "test-1", 24933642)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 2568781)
+        Day::test(Day::part2, "input", 2568781)
     }
 
     // Benchmarks
@@ -34,12 +34,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -145,12 +145,13 @@ mod implementation {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = u32;
+    type Output1 = u32;
+    type Output2 = u32;
     fn day() -> u8 {
         7
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         Tree::new(input)
             .flatten_sizes()
             .iter()
@@ -158,7 +159,7 @@ impl aoc::Solver for Day {
             .sum()
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         let tree = Tree::new(input);
         let need_to_free = tree.get_size() - 40000000;
 

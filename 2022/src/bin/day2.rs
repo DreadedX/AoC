@@ -13,19 +13,19 @@ mod tests {
 
     #[test]
     fn part1_test1() -> Result<()> {
-        Day::test(aoc::Part::ONE, "test-1", 15)
+        Day::test(Day::part1, "test-1", 15)
     }
     #[test]
     fn part1_solution() -> Result<()> {
-        Day::test(aoc::Part::ONE, "input", 14264)
+        Day::test(Day::part1, "input", 14264)
     }
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(aoc::Part::TWO, "test-1", 12)
+        Day::test(Day::part2, "test-1", 12)
     }
     #[test]
     fn part2_solution() -> Result<()> {
-        Day::test(aoc::Part::TWO, "input", 12382)
+        Day::test(Day::part2, "input", 12382)
     }
 }
 
@@ -39,12 +39,12 @@ mod bench {
     #[bench]
     #[ignore]
     fn part1_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_solution(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
@@ -122,19 +122,20 @@ fn calc_score(sum: u32, (a, b): (Hand, Hand)) -> u32 {
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output = u32;
+    type Output1 = u32;
+    type Output2 = u32;
     fn day() -> u8 {
         2
     }
 
-    fn part1(input: &str) -> Self::Output {
+    fn part1(input: &str) -> Self::Output1 {
         input.lines()
             .filter_map(|round| round.split_once(" "))
             .map(|(a, b)| (Hand::from(a), Hand::from(b)))
             .fold(0, calc_score)
     }
 
-    fn part2(input: &str) -> Self::Output {
+    fn part2(input: &str) -> Self::Output2 {
         input.lines()
             .filter_map(|round| round.split_once(" "))
             .map(|(a, b)| {
