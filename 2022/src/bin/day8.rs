@@ -125,11 +125,20 @@ impl aoc::Solver for Day {
                 let mut distance_up = 0;
                 let mut distance_down = 0;
 
+                // Bail early if the tree can not exceed the current highest
+                if x * (input[y].len()-x-1) * y * (input.len()-y-1) < score_highest {
+                    continue;
+                }
+
                 for c in (0..x).rev() {
                     distance_left += 1;
                     if input[y][c] >= height {
                         break;
                     }
+                }
+
+                if distance_left * (input[y].len()-x-1) * y * (input.len()-y-1) < score_highest {
+                    continue;
                 }
 
                 for c in x+1..input[y].len() {
@@ -139,11 +148,19 @@ impl aoc::Solver for Day {
                     }
                 }
 
+                if distance_left * distance_right * y * (input.len()-y-1) < score_highest {
+                    continue;
+                }
+
                 for r in (0..y).rev() {
                     distance_up += 1;
                     if input[r][x] >= height {
                         break;
                     }
+                }
+
+                if distance_left * distance_right * distance_up * (input.len()-y-1) < score_highest {
+                    continue;
                 }
 
                 for r in y+1..input[y].len() {
