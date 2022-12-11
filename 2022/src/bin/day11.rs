@@ -44,24 +44,6 @@ mod tests {
     }
 }
 
-fn gcd(a: i64, b: i64) -> i64 {
-    match ((a, b), (a & 1, b & 1)) {
-        ((x, y), _) if x == y => y,
-        ((0, x), _) | ((x, 0), _) => x,
-        ((x, y), (0, 1)) | ((y, x), (1, 0)) => gcd(x >> 1, y),
-        ((x, y), (0, 0)) => gcd(x >> 1, y >> 1) << 1,
-        ((x, y), (1, 1)) => {
-            let (x, y) = (min(x, y), max(x, y));
-            gcd((y - x) >> 1, x)
-        }
-        _ => unreachable!(),
-    }
-}
-
-fn lcm(a: i64, b: i64) -> i64 {
-    a * b / gcd(a, b)
-}
-
 #[derive(Debug, Copy, Clone)]
 enum Operation {
     Add(i64),
@@ -144,7 +126,7 @@ fn step(monkeys: &mut Vec<Monkey>, div: i64, reducer: i64) {
 fn solution(input: &str, rounds: i32, div: i64) -> i64 {
     let mut monkeys: Vec<Monkey> = input.split("\n\n").map(|line| line.parse().unwrap()).collect();
 
-    let reducer = monkeys.iter().fold(1, |acc, monkey| lcm(acc, monkey.divisor));
+    let reducer = monkeys.iter().fold(1, |acc, monkey| acc * monkey.divisor);
 
     for _ in 0..rounds {
         step(&mut monkeys, div, reducer);
