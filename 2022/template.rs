@@ -21,12 +21,12 @@ mod tests {
     #[bench]
     #[ignore]
     fn part1_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::ONE, b)
+        Day::benchmark(Day::part1, b)
     }
     #[bench]
     #[ignore]
     fn part2_bench(b: &mut test::Bencher) {
-        Day::benchmark(aoc::Part::TWO, b)
+        Day::benchmark(Day::part2, b)
     }
 }
 
