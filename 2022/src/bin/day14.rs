@@ -1,9 +1,10 @@
 #![feature(test)]
 use core::fmt;
-use std::{str::FromStr, cmp::{min, max}};
+use std::{str::FromStr, cmp::{min, max}, borrow::Cow, fs::File};
 
 use anyhow::Result;
 use aoc::Solver;
+use gif::{Encoder, Repeat, Frame};
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -113,7 +114,7 @@ struct Cave {
     size: (usize, usize),
 }
 
-impl Cave {
+impl<'a> Cave {
     // Also returns the width and height of the cave
     fn new(mut paths: Vec<Path>, floor: bool) -> Self {
         // The sand source is at 500, 0
@@ -251,12 +252,31 @@ impl Cave {
         println!("");
     }
 
+    fn frame(&self) -> Cow<[u8]> {
+        let buffer = self.grid.iter().flat_map(|line| line.iter().map(|block| match block {
+                    Block::Air => 0,
+                    Block::Rock => 1,
+                    Block::Sand => 2,
+                    Block::Source => 3,
+                    Block::Void => 4,
+        }).collect::<Vec<_>>()).collect::<Vec<u8>>();
+
+        Cow::from(buffer)
+    }
+
     fn count_sand(&self) -> usize {
         self.grid.iter().flatten().filter(|&block| *block == Block::Sand).count()
     }
 }
 
-// fn size(paths: Vec<Paths>)
+fn write_frame<T: std::io::Write>(encoder: &mut Encoder<T>, cave: &Cave, delay: u16) {
+    let mut frame = Frame::default();
+    frame.width = cave.size.0 as u16;
+    frame.height = cave.size.1 as u16;
+    frame.buffer = cave.frame();
+    frame.delay = delay;
+    encoder.write_frame(&frame).unwrap();
+}
 
 // -- Solution --
 pub struct Day;
@@ -271,9 +291,18 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> Self::Output1 {
         let mut cave = Cave::from_str(input, false);
 
-        while cave.simulate_sand() {}
+        // let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
+        // let mut image = File::create("visualize/14/part1.gif").unwrap();
+        // let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
+        // encoder.set_repeat(Repeat::Infinite).unwrap();
 
-        cave.print();
+        // write_frame(&mut encoder, &mut cave, 100);
+
+        while cave.simulate_sand() {
+            // write_frame(&mut encoder, &mut cave, 1);
+        }
+
+        // write_frame(&mut encoder, &mut cave, 1000);
 
         cave.count_sand()
     }
@@ -281,9 +310,18 @@ impl aoc::Solver for Day {
     fn part2(input: &str) -> Self::Output2 {
         let mut cave = Cave::from_str(input, true);
 
-        while cave.simulate_sand() {}
+        // let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
+        // let mut image = File::create("visualize/14/part2.gif").unwrap();
+        // let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
+        // encoder.set_repeat(Repeat::Infinite).unwrap();
 
-        cave.print();
+        // write_frame(&mut encoder, &mut cave, 100);
+
+        while cave.simulate_sand() {
+            // write_frame(&mut encoder, &mut cave, 1);
+        }
+
+        // write_frame(&mut encoder, &mut cave, 1000);
 
         cave.count_sand()
     }
