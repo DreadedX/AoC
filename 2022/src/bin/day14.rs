@@ -1,10 +1,14 @@
 #![feature(test)]
 use core::fmt;
-use std::{str::FromStr, cmp::{min, max}, borrow::Cow, fs::File};
+use std::{str::FromStr, cmp::{min, max}};
 
 use anyhow::Result;
 use aoc::Solver;
+
+#[cfg(feature = "gif")]
 use gif::{Encoder, Repeat, Frame};
+#[cfg(feature = "gif")]
+use std::{borrow::Cow, fs::File};
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -234,24 +238,7 @@ impl<'a> Cave {
         }
     }
 
-    fn print(&self) {
-        for line in self.grid.iter() {
-            for block in line {
-                let c = match block {
-                    Block::Air => '.',
-                    Block::Rock => '#',
-                    Block::Sand => 'o',
-                    Block::Source => '+',
-                    Block::Void => 'x',
-                };
-
-                print!("{}", c);
-            }
-            println!("");
-        }
-        println!("");
-    }
-
+    #[cfg(feature = "gif")]
     fn frame(&self) -> Cow<[u8]> {
         let buffer = self.grid.iter().flat_map(|line| line.iter().map(|block| match block {
                     Block::Air => 0,
@@ -269,6 +256,7 @@ impl<'a> Cave {
     }
 }
 
+#[cfg(feature = "gif")]
 fn write_frame<T: std::io::Write>(encoder: &mut Encoder<T>, cave: &Cave, delay: u16) {
     let mut frame = Frame::default();
     frame.width = cave.size.0 as u16;
@@ -291,18 +279,26 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> Self::Output1 {
         let mut cave = Cave::from_str(input, false);
 
-        // let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
-        // let mut image = File::create("visualize/14/part1.gif").unwrap();
-        // let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
-        // encoder.set_repeat(Repeat::Infinite).unwrap();
+        #[cfg(feature = "gif")]
+        let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
+        #[cfg(feature = "gif")]
+        let mut image = File::create("visualize/14/part1.gif").unwrap();
+        #[cfg(feature = "gif")]
+        let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
+        #[cfg(feature = "gif")]
+        encoder.set_repeat(Repeat::Infinite).unwrap();
 
-        // write_frame(&mut encoder, &mut cave, 100);
+        #[cfg(feature = "gif")]
+        write_frame(&mut encoder, &mut cave, 100);
+
 
         while cave.simulate_sand() {
-            // write_frame(&mut encoder, &mut cave, 1);
+            #[cfg(feature = "gif")]
+            write_frame(&mut encoder, &mut cave, 1);
         }
 
-        // write_frame(&mut encoder, &mut cave, 1000);
+        #[cfg(feature = "gif")]
+        write_frame(&mut encoder, &mut cave, 1000);
 
         cave.count_sand()
     }
@@ -310,18 +306,25 @@ impl aoc::Solver for Day {
     fn part2(input: &str) -> Self::Output2 {
         let mut cave = Cave::from_str(input, true);
 
-        // let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
-        // let mut image = File::create("visualize/14/part2.gif").unwrap();
-        // let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
-        // encoder.set_repeat(Repeat::Infinite).unwrap();
+        #[cfg(feature = "gif")]
+        let color_map = &[0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0xea, 0xc7, 0x99, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF];
+        #[cfg(feature = "gif")]
+        let mut image = File::create("visualize/14/part2.gif").unwrap();
+        #[cfg(feature = "gif")]
+        let mut encoder = Encoder::new(&mut image, cave.size.0 as u16, cave.size.1 as u16, color_map).unwrap();
+        #[cfg(feature = "gif")]
+        encoder.set_repeat(Repeat::Infinite).unwrap();
 
-        // write_frame(&mut encoder, &mut cave, 100);
+        #[cfg(feature = "gif")]
+        write_frame(&mut encoder, &mut cave, 100);
 
         while cave.simulate_sand() {
-            // write_frame(&mut encoder, &mut cave, 1);
+            #[cfg(feature = "gif")]
+            write_frame(&mut encoder, &mut cave, 1);
         }
 
-        // write_frame(&mut encoder, &mut cave, 1000);
+        #[cfg(feature = "gif")]
+        write_frame(&mut encoder, &mut cave, 1000);
 
         cave.count_sand()
     }
