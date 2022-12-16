@@ -1,5 +1,5 @@
 #![feature(test)]
-use std::{str::FromStr, cmp::{min, max}};
+use std::str::FromStr;
 
 use anyhow::Result;
 use aoc::Solver;
