@@ -83,7 +83,49 @@ struct State {
     opened: Vec<String>,
 }
 
-fn find_best(root: String, volcano: &Volcano, opened: Vec<String>, time: i32) -> (i32, Vec<String>) {
+fn visit(mut state: State, volcano: &Volcano, cache: &mut HashMap<State, i32>) -> i32 {
+    if state.time <= 1 {
+        return 0;
+    }
+
+    // If we have already evaluated this state, return the result
+    if cache.contains_key(&state) {
+        return *cache.get(&state).unwrap();
+    }
+
+    let mut best = 0;
+
+    let current_valve = volcano.valves.get(&state.name).unwrap();
+    if !state.opened.contains(&state.name) && current_valve.flowrate != 0 {
+        // Add the current valve to the list of opened valves
+        state.opened.push(state.name.clone());
+
+        // Create the new state
+        let ns = State {name: state.name.to_owned(), time: state.time-1, opened: state.opened.clone()};
+        best = best.max(visit(ns, volcano, cache) + (state.time-1) * current_valve.flowrate);
+
+        state.opened.pop();
+    }
+
+    // Option 2
+    for connection in current_valve.connections.iter() {
+        let ns = State {name: connection.to_owned(), time: state.time-1, opened: state.opened.clone()};
+        best = best.max(visit(ns, volcano, cache));
+    }
+
+    cache.insert(state, best);
+
+    return best;
+}
+
+fn find_best(root: String, volcano: &Volcano, time: i32) -> i32 {
+    let initial_state = State{ name: root, time, opened: Vec::new() };
+    let mut cache = HashMap::new();
+
+    return visit(initial_state, volcano, &mut cache);
+}
+
+fn find_best_old(root: String, volcano: &Volcano, opened: Vec<String>, time: i32) -> (i32, Vec<String>) {
     let mut queue = VecDeque::new();
     queue.push_back((State{name: root, time, opened}, 0));
 
@@ -155,7 +197,7 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> Self::Output1 {
         let volcano = Volcano::from_str(input).unwrap();
 
-        find_best("AA".to_owned(), &volcano, Vec::new(), 30).0
+        find_best("AA".to_owned(), &volcano, 30)
     }
 
     fn part2(input: &str) -> Self::Output2 {
@@ -172,8 +214,8 @@ impl aoc::Solver for Day {
         // non-zero valves
         // However this is not the case in the example, so it will actually fail the example
         // @TODO Implement a proper solution that can also solve the example
-        let player = find_best("AA".to_owned(), &volcano, Vec::new(), time);
-        let elephant = find_best("AA".to_owned(), &volcano, player.1, time);
+        let player = find_best_old("AA".to_owned(), &volcano, Vec::new(), time);
+        let elephant = find_best_old("AA".to_owned(), &volcano, player.1, time);
 
         player.0 + elephant.0
     }
