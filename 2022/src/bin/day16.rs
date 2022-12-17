@@ -1,5 +1,5 @@
 #![feature(test)]
-use std::{collections::{HashMap, VecDeque, HashSet}, str::FromStr};
+use std::{collections::{HashMap, HashSet, VecDeque}, str::FromStr};
 
 use anyhow::Result;
 use aoc::Solver;
@@ -47,10 +47,10 @@ mod tests {
 #[derive(Debug, Clone)]
 struct Valve {
     flowrate: i32,
-    connections: Vec<String>,
+    connections: Vec<(String, i32)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Volcano {
     valves: HashMap<String, Valve>,
 }
@@ -67,7 +67,7 @@ impl FromStr for Volcano {
                 let name = iter.nth(1).unwrap().into();
                 let flowrate = iter.nth(2).unwrap().chars().filter(|c| c.is_digit(10)).collect::<String>().parse().unwrap();
 
-                let connections = iter.nth(4).unwrap().split(", ").map(|name| name.into()).collect();
+                let connections = iter.nth(4).unwrap().split(", ").map(|name| (name.into(), 1)).collect();
 
                 (name, Valve {flowrate, connections})
             }).collect();
@@ -76,7 +76,7 @@ impl FromStr for Volcano {
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 struct State {
     name: String,
     time: i32,
@@ -94,8 +94,9 @@ fn visit(mut state: State, volcano: &Volcano, cache: &mut HashMap<State, i32>) -
     }
 
     let mut best = 0;
-
     let current_valve = volcano.valves.get(&state.name).unwrap();
+
+    // Option 1: We open a valve [Only do this it is closed and has a non-zero flowrate]
     if !state.opened.contains(&state.name) && current_valve.flowrate != 0 {
         // Add the current valve to the list of opened valves
         state.opened.push(state.name.clone());
@@ -107,9 +108,9 @@ fn visit(mut state: State, volcano: &Volcano, cache: &mut HashMap<State, i32>) -
         state.opened.pop();
     }
 
-    // Option 2
-    for connection in current_valve.connections.iter() {
-        let ns = State {name: connection.to_owned(), time: state.time-1, opened: state.opened.clone()};
+    // Option 2: Move to a different valve
+    for (connection, distance) in current_valve.connections.iter() {
+        let ns = State {name: connection.to_owned(), time: state.time-distance, opened: state.opened.clone()};
         best = best.max(visit(ns, volcano, cache));
     }
 
@@ -118,11 +119,36 @@ fn visit(mut state: State, volcano: &Volcano, cache: &mut HashMap<State, i32>) -
     return best;
 }
 
-fn find_best(root: String, volcano: &Volcano, time: i32) -> i32 {
-    let initial_state = State{ name: root, time, opened: Vec::new() };
-    let mut cache = HashMap::new();
+fn simplify(current: String, volcano: &Volcano, visited: &mut HashSet<String>) -> Vec<(String, i32)> {
+    visited.insert(current.to_owned());
 
-    return visit(initial_state, volcano, &mut cache);
+    let valve = volcano.valves.get(&current).unwrap();
+
+    let mut connections = Vec::new();
+
+    for (name, distance) in valve.connections.iter() {
+        // If we have already visited the item
+        if visited.contains(name) {
+            continue;
+        }
+
+        let child = volcano.valves.get(name).unwrap();
+
+        // If the child has a flowrate we want to keep it
+        if child.flowrate != 0 {
+            visited.insert(name.to_owned());
+            connections.push((name.to_owned(), *distance));
+        } else {
+            // Otherwise explore the child
+            let mut a = simplify(name.to_owned(), volcano, visited);
+            for (_, value) in a.iter_mut() {
+                *value += 1;
+            }
+            connections.append(&mut a);
+        }
+    }
+
+    return connections;
 }
 
 fn find_best_old(root: String, volcano: &Volcano, opened: Vec<String>, time: i32) -> (i32, Vec<String>) {
@@ -173,8 +199,8 @@ fn find_best_old(root: String, volcano: &Volcano, opened: Vec<String>, time: i32
         }
 
         // Option 2
-        for connection in current_valve.connections.iter() {
-            let ns = (State {name: connection.to_owned(), time: state.0.time-1, opened: state.0.opened.clone()}, state.1);
+        for (connection, distance) in current_valve.connections.iter() {
+            let ns = (State {name: connection.to_owned(), time: state.0.time-distance, opened: state.0.opened.clone()}, state.1);
             queue.push_back(ns);
         }
 
@@ -197,14 +223,25 @@ impl aoc::Solver for Day {
     fn part1(input: &str) -> Self::Output1 {
         let volcano = Volcano::from_str(input).unwrap();
 
-        find_best("AA".to_owned(), &volcano, 30)
+        let mut simplified_volcano = volcano.clone();
+        for (current, _) in volcano.valves.iter() {
+            let valve = simplified_volcano.valves.get_mut(current).unwrap();
+            valve.connections = simplify(current.to_owned(), &volcano, &mut HashSet::new());
+        }
+
+        let initial_state = State{ name: "AA".to_owned(), time: 30, opened: Vec::new() };
+        let mut cache = HashMap::new();
+
+        visit(initial_state, &simplified_volcano, &mut cache)
     }
 
     fn part2(input: &str) -> Self::Output2 {
         let volcano = Volcano::from_str(input).unwrap();
-
-        let time = 26;
-
+        let mut simplified_volcano = volcano.clone();
+        for (current, _) in volcano.valves.iter() {
+            let valve = simplified_volcano.valves.get_mut(current).unwrap();
+            valve.connections = simplify(current.to_owned(), &volcano, &mut HashSet::new());
+        }
 
         // This solution is very much a hack
         // In the 26 minutes we can not turn on all the valves
@@ -214,8 +251,9 @@ impl aoc::Solver for Day {
         // non-zero valves
         // However this is not the case in the example, so it will actually fail the example
         // @TODO Implement a proper solution that can also solve the example
-        let player = find_best_old("AA".to_owned(), &volcano, Vec::new(), time);
-        let elephant = find_best_old("AA".to_owned(), &volcano, player.1, time);
+        let time = 26;
+        let player = find_best_old("AA".to_owned(), &simplified_volcano, Vec::new(), time);
+        let elephant = find_best_old("AA".to_owned(), &simplified_volcano, player.1, time);
 
         player.0 + elephant.0
     }
