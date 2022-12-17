@@ -188,12 +188,11 @@ impl aoc::Solver for Day {
             .flat_map(Sensor::from_str)
             .collect::<Vec<_>>();
 
-        let y_level;
-        if input.lines().count() > 14 {
-            y_level = 2000000;
+        let y_level = if input.lines().count() > 14 {
+            2000000
         } else {
-            y_level = 10;
-        }
+            10
+        };
 
         get_ranges(&sensors, y_level, true)
             .iter()
@@ -207,12 +206,12 @@ impl aoc::Solver for Day {
             .lines()
             .flat_map(Sensor::from_str)
             .collect::<Vec<_>>();
-        let max;
-        if input.lines().count() > 14 {
-            max = 4000000;
+
+        let max = if input.lines().count() > 14 {
+            4000000
         } else {
-            max = 20;
-        }
+            20
+        };
 
         for y_level in 0..(max+1) {
             let ranges = get_ranges(&sensors, y_level, false);
