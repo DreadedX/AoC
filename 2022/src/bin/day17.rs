@@ -2,6 +2,9 @@
 use anyhow::Result;
 use aoc::Solver;
 
+// @TODO Can be made faster using bitset and shifting for moving left and right
+// Should also make collision detection much faster
+
 // -- Runners --
 fn main() -> Result<()> {
     Day::solve()
@@ -42,357 +45,269 @@ mod tests {
     }
 }
 
-#[derive(PartialEq, Eq)]
-enum ShapeName {
-    Horizontal,
-    Plus,
-    Corner,
-    Vertical,
-    Square,
+#[derive(Debug)]
+struct Shape {
+    shape: u32,
 }
 
-struct Position {
-    x: i64,
-    y: i64,
-}
+const WIDTH: usize = 7;
+const SPACE_ABOVE: usize = 3;
 
-trait Shape {
-    fn height(&self) -> i64;
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool;
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool;
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool;
+impl Shape {
+    fn new(s: &[&str]) -> Self {
+        let shape = s.into_iter()
+            .rev()
+            .map(|line| {
+                line.chars()
+                    .enumerate()
+                    .fold(0, |acc, (x, c)| {
+                        if c == '#' {
+                            acc | 1 << x
+                        } else {
+                            acc
+                        }
+                    })
+            }).enumerate()
+            .fold(0, |acc, (y, x)| {
+                acc | x << 8*y
+            });
 
-    fn land(&self, origin: &Position, field: &mut Field);
-
-    fn shape(&self) -> ShapeName;
-}
-
-// ####
-struct Horizontal;
-impl Shape for Horizontal {
-    fn height(&self) -> i64 {
-        1
+        Self {
+            shape
+        }
     }
 
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x-1, origin.y)
+    fn shape(&self) -> u32 {
+        return self.shape;
     }
 
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+4, origin.y)
-    }
-
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y-1) &&
-            field.is_open(origin.x+1, origin.y-1) &&
-            field.is_open(origin.x+2, origin.y-1) &&
-            field.is_open(origin.x+3, origin.y-1)
-    }
-
-    fn land(&self, origin: &Position, field: &mut Field) {
-        field.set(origin.x+3, origin.y);
-        field.set(origin.x+2, origin.y);
-        field.set(origin.x+1, origin.y);
-        field.set(origin.x, origin.y);
-    }
-
-    fn shape(&self) -> ShapeName {
-        ShapeName::Horizontal
-    }
-}
-
-// .#.
-// ###
-// .#.
-struct Plus;
-impl Shape for Plus {
-    fn height(&self) -> i64 {
-        3
-    }
-
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y+2) &&
-            field.is_open(origin.x-1, origin.y+1) &&
-            field.is_open(origin.x, origin.y)
-
-    }
-
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+2, origin.y+2) &&
-            field.is_open(origin.x+3, origin.y+1) &&
-            field.is_open(origin.x+2, origin.y)
-
-    }
-
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y) &&
-            field.is_open(origin.x+1, origin.y-1) &&
-            field.is_open(origin.x+2, origin.y)
-    }
-
-    fn land(&self, origin: &Position, field: &mut Field) {
-        field.set(origin.x+1, origin.y+2);
-        field.set(origin.x, origin.y+1);
-        field.set(origin.x+1, origin.y+1);
-        field.set(origin.x+2, origin.y+1);
-        field.set(origin.x+1, origin.y);
-    }
-
-    fn shape(&self) -> ShapeName {
-        ShapeName::Plus
-    }
-}
-
-// ..#
-// ..#
-// ###
-struct Corner;
-impl Shape for Corner {
-    fn height(&self) -> i64 {
-        3
-    }
-
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+1, origin.y+2) &&
-            field.is_open(origin.x+1, origin.y+1) &&
-            field.is_open(origin.x-1, origin.y)
-    }
-
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+3, origin.y+2) &&
-            field.is_open(origin.x+3, origin.y+1) &&
-            field.is_open(origin.x+3, origin.y)
-    }
-
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y-1) &&
-            field.is_open(origin.x+1, origin.y-1) &&
-            field.is_open(origin.x+2, origin.y-1)
-    }
-
-    fn land(&self, origin: &Position, field: &mut Field) {
-        field.set(origin.x+2, origin.y+2);
-        field.set(origin.x+2, origin.y+1);
-        field.set(origin.x, origin.y);
-        field.set(origin.x+1, origin.y);
-        field.set(origin.x+2, origin.y);
-    }
-
-    fn shape(&self) -> ShapeName {
-        ShapeName::Corner
-    }
-}
-
-// #
-// #
-// #
-// #
-struct Vertical;
-impl Shape for Vertical {
-    fn height(&self) -> i64 {
-        4
-    }
-
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x-1, origin.y+3) &&
-            field.is_open(origin.x-1, origin.y+2) &&
-            field.is_open(origin.x-1, origin.y+1) &&
-            field.is_open(origin.x-1, origin.y)
-    }
-
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+1, origin.y+3) &&
-            field.is_open(origin.x+1, origin.y+2) &&
-            field.is_open(origin.x+1, origin.y+1) &&
-            field.is_open(origin.x+1, origin.y)
-    }
-
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y-1)
-    }
-
-    fn land(&self, origin: &Position, field: &mut Field) {
-        field.set(origin.x, origin.y+3);
-        field.set(origin.x, origin.y+2);
-        field.set(origin.x, origin.y+1);
-        field.set(origin.x, origin.y);
-    }
-
-    fn shape(&self) -> ShapeName {
-        ShapeName::Vertical
-    }
-}
-
-// ##
-// ##
-struct Square;
-impl Shape for Square {
-    fn height(&self) -> i64 {
-        2
-    }
-
-    fn can_move_left(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x-1, origin.y+1) &&
-            field.is_open(origin.x-1, origin.y)
-    }
-
-    fn can_move_right(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x+2, origin.y+1) &&
-            field.is_open(origin.x+2, origin.y)
-    }
-
-    fn can_move_down(&self, origin: &Position, field: &Field) -> bool {
-        field.is_open(origin.x, origin.y-1) &&
-            field.is_open(origin.x+1, origin.y-1)
-    }
-
-    fn land(&self, origin: &Position, field: &mut Field) {
-        field.set(origin.x, origin.y+1);
-        field.set(origin.x+1, origin.y+1);
-        field.set(origin.x, origin.y);
-        field.set(origin.x+1, origin.y);
-    }
-
-    fn shape(&self) -> ShapeName {
-        ShapeName::Square
+    fn get_shapes() -> Vec<Shape> {
+        vec![
+            // Horizontal
+            Shape::new(&[
+                "..####.",
+            ]),
+            // Plus
+            Shape::new(&[
+                "...#...",
+                "..###..",
+                "...#...",
+            ]),
+            // Corner
+            Shape::new(&[
+                "....#..",
+                "....#..",
+                "..###..",
+            ]),
+            // Vertical
+            Shape::new(&[
+                "..#....",
+                "..#....",
+                "..#....",
+                "..#....",
+            ]),
+            // Square
+            Shape::new(&[
+                "..##...",
+                "..##...",
+            ]),
+        ]
     }
 }
 
 struct Field {
-    map: Vec<Vec<bool>>,
-    heights: Vec<i64>,
+    map: Vec<u8>,
+    heights: Vec<usize>,
 }
-
-const WIDTH: i64 = 7;
-const SPACE_ABOVE: i64 = 3;
 
 impl Field {
     fn new() -> Self {
         Self {
             map: Vec::new(),
-            heights: vec![0; WIDTH as usize],
+            heights: vec![0; WIDTH],
         }
     }
 
-    fn is_open(&self, x: i64, y: i64) -> bool {
-        // Out of bounds check
-        // Note that we do not check the upper bound for y as we are only going to move down
-        if x < 0 || x >= WIDTH || y < 0 {
-            return false;
+    fn get_mask(&self, y: usize) -> u32 {
+        // Create a mask of all the occupied spaces
+        u32::from_le_bytes([self.map[y], self.map[y+1], self.map[y+2], self.map[y+3]])
+    }
+
+    fn move_left(&self, y: usize, shape: u32) -> u32 {
+        // Create a mask for the left most bits
+        let mask = 0b00000001_00000001_00000001_00000001;
+
+        // If any part of the shape is in the left most bit we can not move to the left
+        if shape & mask != 0 {
+            return shape;
         }
 
-        // The spot is open if the value in the map is false
-        !self.map[y as usize][x as usize]
+        // Move the shape to the left
+        let moved = shape >> 1;
+
+        let mask = self.get_mask(y);
+
+        // If there is overlap we can not move
+        if moved & mask != 0 {
+            return shape;
+        }
+
+        // No collision detected
+        return moved;
     }
 
-    fn set(&mut self, x: i64, y: i64) {
-        // Update the max height for each column
-        self.heights[x as usize] = self.heights[x as usize].max(y+1);
-        self.map[y as usize][x as usize] = true;
+    fn move_right(&self, y: usize, shape: u32) -> u32 {
+        // Move the shape to the right
+        let moved = shape << 1;
+
+        // Create the mask for the left wall and occupied spaces
+        let mask = 0b10000000_10000000_10000000_10000000 |
+            self.get_mask(y);
+
+        // If there is overlap we can not move
+        if moved & mask != 0 {
+            return shape;
+        }
+
+        // No collision detected
+        return moved;
     }
 
-    fn expand(&mut self, height: i64) {
-        let max = self.height();
+    fn collision_down(&self, y: usize, shape: u32) -> bool {
+        // Hit the floor
+        if y == 0 {
+            return true;
+        }
 
-        while self.map.len() < (max + height + SPACE_ABOVE) as usize {
-            self.map.push(vec![false; WIDTH as usize]);
+        // Create a mask of all occuiped spaces one level down
+        let mask = self.get_mask(y-1);
+
+        if shape & mask != 0 {
+            return true;
+        }
+
+        return false;
+    }
+
+    fn land(&mut self, y: usize, shape: u32) {
+        for i in 0..4 {
+            self.map[y+i] |= ((shape >> 8*i) & 0xFF) as u8;
+            for x in 0..WIDTH {
+                if (self.map[y+i] >> x) & 1 == 1 {
+                    self.heights[x] = self.heights[x].max(y+i+1);
+                }
+            }
         }
     }
 
-    fn height(&self) -> i64 {
+    fn height(&self) -> usize {
         *self.heights.iter().max().unwrap()
     }
 
-    fn check_for_pattern(&self, initial_height: i64) -> i64 {
-        // Skip the top lines as they might still might change
-        'outer: for height in 10..(self.height()-initial_height) {
-            if height % 2 != 0 {
-                continue 'outer;
-            }
+    fn height_min(&self) -> usize {
+        *self.heights.iter().max().unwrap()
+    }
 
-            let bottom = &self.map[initial_height as usize..(height/2 + initial_height) as usize];
-            let top = &self.map[(height/2+initial_height) as usize..(height + initial_height) as usize];
+    fn expand(&mut self) {
+        let max = self.height();
 
-            assert_eq!(bottom.len(), top.len(), "Height: {height}");
+        while self.map.len() < (max + 4 + SPACE_ABOVE) as usize {
+            self.map.push(0);
+        }
+    }
 
-            for y in 0..(height/2) as usize {
-                for x in 0..WIDTH as usize {
-                    if bottom[y][x] != top[y][x] {
-                        continue 'outer;
-                    }
-                }
-            }
-
-            return height/2;
+    fn check_for_pattern(&self, initial_height: usize) -> usize {
+        // Check a window starting from the initial height up to the lowest column,
+        // as above that the rows might still change
+        let height = self.height_min()-initial_height;
+        if height % 2 != 0 {
+            return 0;
         }
 
-        return 0;
+        let bottom = &self.map[initial_height as usize..(height/2 + initial_height) as usize];
+        let top = &self.map[(height/2+initial_height) as usize..(height + initial_height) as usize];
+
+        assert_eq!(bottom.len(), top.len(), "Height: {height}");
+
+        // Check if the top and bottom half are the same
+        for y in 0..(height/2) as usize {
+            if bottom[y] != top[y] {
+                return 0;
+            }
+        }
+
+        return height/2;
     }
+
+    // fn print(&self) {
+    //     for line in self.map.iter().rev() {
+    //         for x in 0..WIDTH {
+    //             if (line >> x) & 1 == 1 {
+    //                 print!("#");
+    //             } else {
+    //                 print!(".");
+    //             }
+    //         }
+    //         println!("");
+    //     }
+    // }
 }
 
 fn simulate_next_block<'a, S, O>(shapes: &mut S, operator: &mut O, field: &mut Field) where
-    S: Iterator<Item = &'a Box<dyn Shape>>,
+    S: Iterator<Item = &'a Shape>,
     O: Iterator<Item = char>
 {
-    // Get the next shape
-    let shape = shapes.next().unwrap();
- 
-    // Expand the field upwards
-    field.expand(shape.height());
+    let mut shape = shapes.next().unwrap().shape();
 
-    // Set the origin to two from the side and three above the highest rock
-    let mut origin = Position{ x: 2, y: field.height() as i64 + SPACE_ABOVE as i64 };
+    field.expand();
+
+    let mut y = field.height() + SPACE_ABOVE;
     loop {
-        // First check left/right movement
         let direction = operator.next().unwrap();
 
-        if direction == '<' && shape.can_move_left(&origin, &field) {
-            origin.x -= 1;
-        } else if direction == '>' && shape.can_move_right(&origin, &field) {
-            origin.x += 1;
-        } else {
-            // Unable to move left or right
+        match direction {
+            '<' => shape = field.move_left(y, shape),
+            '>' => shape = field.move_right(y, shape),
+            _ => panic!("Unexpected direction"),
         }
 
-        if shape.can_move_down(&origin, &field) {
-            origin.y -= 1;
-        } else {
-            // We are done and can land
+        if field.collision_down(y, shape) {
+            field.land(y, shape);
             break;
+        } else {
+            y -= 1;
         }
     }
-
-    shape.land(&origin, field);
 }
 
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output1 = i64;
-    type Output2 = i64;
+    type Output1 = usize;
+    type Output2 = usize;
 
     fn day() -> u8 {
         17
     }
 
     fn part1(input: &str) -> Self::Output1 {
-        let mut operator = input.trim().chars().cycle();
-        let shapes: Vec<Box<dyn Shape>> = vec![Box::new(Horizontal{}), Box::new(Plus{}), Box::new(Corner{}), Box::new(Vertical{}), Box::new(Square{})];
+        let shapes = Shape::get_shapes();
         let mut shapes = shapes.iter().cycle();
-
+        let mut operator = input.trim().chars().cycle();
         let mut field = Field::new();
 
-        for _rock in 0..2022 {
+        for _ in 0..2022 {
             simulate_next_block(&mut shapes, &mut operator, &mut field);
         }
+
 
         field.height()
     }
 
     fn part2(input: &str) -> Self::Output2 {
         let mut operator = input.trim().chars().cycle();
-        let shapes: Vec<Box<dyn Shape>> = vec![Box::new(Horizontal{}), Box::new(Plus{}), Box::new(Corner{}), Box::new(Vertical{}), Box::new(Square{})];
-        let mut shapes = shapes.iter().cycle().peekable();
+        let shapes = Shape::get_shapes();
+        let mut shapes = shapes.iter().cycle();
 
         let mut field = Field::new();
 
@@ -410,7 +325,7 @@ impl aoc::Solver for Day {
         // And then splitting for a given height, splitting it in two
         // If these two are the same we have found a pattern and now it's height
         let mut total_dropped = initial_rock_count;
-        let mut pattern_height: i64 = 0;
+        let mut pattern_height = 0;
         for i in 0..100_000 {
             simulate_next_block(&mut shapes, &mut operator, &mut field);
 
@@ -421,30 +336,12 @@ impl aoc::Solver for Day {
                 break;
             }
         }
-
         assert_ne!(pattern_height, 0);
 
-        // Because of how the pattern finding is implemented, it might require blocks of the next
-        // pattern iteration to fall before it is able to find the patterm.
-        // In order to get to a known state we keep droppping until we have added the hight of
-        // another pattern iteration
-        while field.height() <= initial_height + 3*pattern_height {
-            simulate_next_block(&mut shapes, &mut operator, &mut field);
-            total_dropped += 1;
-        }
-        // After this we should be in the situation where we have dropped the first block of a
-        // pattern, so how we need to drop another pattern until we have once again added the
-        // height of a pattern iteration
-        let mut rocks_in_pattern = 0;
-        while field.height() <= initial_height + 4*pattern_height {
-            simulate_next_block(&mut shapes, &mut operator, &mut field);
-            rocks_in_pattern += 1;
-        }
-        total_dropped += rocks_in_pattern;
-        // We are once again in the situation where we have dropped the first block in the next
-        // pattern
-
-        assert_ne!(rocks_in_pattern, 0);
+        // @TODO This does not always give the right answer, depending on initial_rock_count we
+        // sometimes get a +1 error, however for my input it works like this
+        let rocks_in_pattern = (total_dropped - initial_rock_count)/2;
+        println!("rocks_in_pattern: {rocks_in_pattern}");
 
         let total = 1000000000000;
         // For some reason this calculation is wrong...
