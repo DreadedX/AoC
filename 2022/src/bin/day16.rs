@@ -1,5 +1,5 @@
 #![feature(test)]
-use std::{collections::{HashMap, HashSet, VecDeque}, str::FromStr};
+use std::{collections::HashMap, str::FromStr, cmp::Ordering};
 
 use anyhow::Result;
 use aoc::Solver;
@@ -46,20 +46,26 @@ mod tests {
 
 #[derive(Debug, Clone)]
 struct Valve {
+    name: String,
     flowrate: i32,
-    connections: Vec<(String, i32)>,
+    connections: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
 struct Volcano {
-    valves: HashMap<String, Valve>,
+    valves: Vec<Valve>,
+    dist: Vec<Vec<i32>>,
+    size: usize,
 }
+
+const STARTING_NAME: &str = "AA";
 
 impl FromStr for Volcano {
     type Err = anyhow::Error;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let valves = input
+        // Parse the input into a vector of valves
+        let mut valves = input
             .lines()
             .map(|line| {
                 let mut iter = line.splitn(10, " ");
@@ -67,147 +73,266 @@ impl FromStr for Volcano {
                 let name = iter.nth(1).unwrap().into();
                 let flowrate = iter.nth(2).unwrap().chars().filter(|c| c.is_digit(10)).collect::<String>().parse().unwrap();
 
-                let connections = iter.nth(4).unwrap().split(", ").map(|name| (name.into(), 1)).collect();
+                let connections = iter.nth(4).unwrap().split(", ").map(|name| name.into()).collect();
 
-                (name, Valve {flowrate, connections})
-            }).collect();
+                Valve {name, flowrate, connections}
+            }).collect::<Vec<_>>();
 
-        Ok(Volcano { valves })
-    }
-}
+        // Sort the valves such that the starting point is first followed by the valves in order of
+        // highest to lowest flowrate
+        valves.sort_by(|a, b| {
+            // Make sure AA is always in the first index
+            if a.name == STARTING_NAME {
+                return Ordering::Less;
+            } else if b.name == STARTING_NAME {
+                return Ordering::Greater;
+            }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-struct State {
-    name: String,
-    time: i32,
-    opened: Vec<String>,
-}
+            b.flowrate.cmp(&a.flowrate)
+        });
 
-fn visit(mut state: State, volcano: &Volcano, cache: &mut HashMap<State, i32>) -> i32 {
-    if state.time <= 1 {
-        return 0;
-    }
-
-    // If we have already evaluated this state, return the result
-    if cache.contains_key(&state) {
-        return *cache.get(&state).unwrap();
-    }
-
-    let mut best = 0;
-    let current_valve = volcano.valves.get(&state.name).unwrap();
-
-    // Option 1: We open a valve [Only do this it is closed and has a non-zero flowrate]
-    if !state.opened.contains(&state.name) && current_valve.flowrate != 0 {
-        // Add the current valve to the list of opened valves
-        state.opened.push(state.name.clone());
-
-        // Create the new state
-        let ns = State {name: state.name.to_owned(), time: state.time-1, opened: state.opened.clone()};
-        best = best.max(visit(ns, volcano, cache) + (state.time-1) * current_valve.flowrate);
-
-        state.opened.pop();
-    }
-
-    // Option 2: Move to a different valve
-    for (connection, distance) in current_valve.connections.iter() {
-        let ns = State {name: connection.to_owned(), time: state.time-distance, opened: state.opened.clone()};
-        best = best.max(visit(ns, volcano, cache));
-    }
-
-    cache.insert(state, best);
-
-    return best;
-}
-
-fn simplify(current: String, volcano: &Volcano, visited: &mut HashSet<String>) -> Vec<(String, i32)> {
-    visited.insert(current.to_owned());
-
-    let valve = volcano.valves.get(&current).unwrap();
-
-    let mut connections = Vec::new();
-
-    for (name, distance) in valve.connections.iter() {
-        // If we have already visited the item
-        if visited.contains(name) {
-            continue;
+        // Create a lookup that allows looking up the index of a valve based on name
+        let mut lookup = HashMap::new();
+        for (idx, valve) in valves.iter().enumerate() {
+            lookup.insert(valve.name.to_owned(), idx);
+            // println!("{idx}: {} [{}]", valve.flowrate, valve.name);
         }
 
-        let child = volcano.valves.get(name).unwrap();
+        // === FLOYD-WARSHALL ===
+        // Create a distance array for Floyd-Warshall initialize with a very large number
+        let size = valves.len();
+        let mut dist = vec![vec![i32::MAX / 4; size]; size];
 
-        // If the child has a flowrate we want to keep it
-        if child.flowrate != 0 {
-            visited.insert(name.to_owned());
-            connections.push((name.to_owned(), *distance));
+        // Fill the initial distances
+        for (from, valve) in valves.iter().enumerate() {
+            for other in valve.connections.iter() {
+                let to = lookup.get(other).unwrap();
+
+                dist[from][*to] = 1;
+            }
+        }
+
+        // Distance to self is always zero
+        for i in 0..size {
+            dist[i][i] = 0;
+        }
+
+        // Update all the distances
+        for k in 0..size {
+            for i in 0..size {
+                for j in 0..size {
+                    if dist[i][j] > dist[i][k] + dist[k][j] {
+                        dist[i][j] = dist[i][k] + dist[k][j]
+                    }
+                }
+            }
+        }
+
+        // Count how many valves have a non-zero flowrate
+        let size = valves.iter().filter(|valve| {
+            valve.flowrate > 0 || valve.name == STARTING_NAME
+        }).count();
+
+        // Truncate the distance map to only include valves that have non-zero flowrate
+        // As we are never interested in these as a destination
+        dist.truncate(size);
+        for row in dist.iter_mut() {
+            row.truncate(size);
+        }
+
+        // print!("    ");
+        // for idx in 0..size {
+        //     print!("{idx:>2} ");
+        // }
+        // println!("");
+        // for from in 0..size {
+        //     print!("{from:>2}: ");
+        //     for to in 0..size {
+        //         print!("{:>2} ", dist[from][to]);
+        //     }
+        //     println!("");
+        // }
+
+        Ok(Volcano { valves, dist, size })
+    }
+}
+
+impl Volcano {
+    fn visit(&self, state: impl State) -> i32 {
+        // There is no time remaining anymore, so no extra pressure is released
+        if state.get_time_remaining() < 0 {
+            return 0;
+        }
+
+        // We have just moved to this valve and opened it
+        // Calculate how much pressure we have just released
+        let released_here = state.get_time_remaining() * self.valves[state.get_pos()].flowrate;
+
+        // Visit the next valve
+        let mut best = 0;
+        for idx in 1..self.size {
+            // But only if it has not been opened yet
+            if state.is_open(idx) {
+                continue;
+            }
+
+            // Calculate how much it costs to move starting from the location of next 'person' to
+            // move
+            let cost = self.dist[state.get_pos_next()][idx] + 1;
+
+            // Go to the next valve, this will give us the best we can do after going to that
+            // valve
+            let released = self.visit(state.next(idx, cost));
+
+            // If it is the best option so far, store it
+            best = best.max(released);
+        }
+
+        return best + released_here;
+    }
+}
+
+trait State {
+    fn new(time_remaining: i32) -> Self;
+    fn next(&self, idx: usize, cost: i32) -> Self;
+    fn is_open(&self, idx: usize) -> bool;
+    fn get_pos(&self) -> usize;
+    fn get_pos_next(&self) -> usize;
+    fn get_time_remaining(&self) -> i32;
+}
+
+#[derive(Copy, Clone)]
+struct StateSingle {
+    pos_player: usize,
+    time_remaining: i32,
+    // We can have a max of 64 valves if we store it like this
+    opened: i64,
+}
+
+impl State for StateSingle {
+    fn new(time_remaining: i32) -> Self {
+        Self {
+            // Player starts in AA (idx: 0)
+            pos_player: 0,
+            time_remaining,
+            // Start with AA marked as opened so we do not visit it again
+            opened: 1,
+        }
+    }
+
+    fn next(&self, idx: usize, cost: i32) -> Self {
+        Self {
+            pos_player: idx,
+            time_remaining: self.time_remaining - cost,
+            opened: self.opened | 1 << idx
+        }
+    }
+
+    fn is_open(&self, idx: usize) -> bool {
+        (self.opened >> idx) & 0x01 == 1
+    }
+
+    fn get_pos(&self) -> usize {
+        self.pos_player
+    }
+
+    fn get_pos_next(&self) -> usize {
+        self.pos_player
+    }
+
+    fn get_time_remaining(&self) -> i32 {
+        self.time_remaining
+    }
+}
+
+#[derive(Copy, Clone)]
+struct StateDouble {
+    pos_player: usize,
+    pos_elephant: usize,
+    time_remaining_player: i32,
+    time_remaining_elephant: i32,
+    player_turn: bool,
+    // We can have a max of 64 valves if we store it like this
+    opened: i64,
+}
+
+impl State for StateDouble {
+    fn new(time_remaining: i32) -> Self {
+        Self {
+            // Player starts in AA (idx: 0)
+            pos_player: 0,
+            pos_elephant: 0,
+            time_remaining_player: time_remaining,
+            time_remaining_elephant: time_remaining,
+            player_turn: true,
+            // Start with AA marked as opened so we do not visit it again
+            opened: 1,
+        }
+    }
+
+    fn next(&self, idx: usize, cost: i32) -> Self {
+        let player_turn = !self.player_turn;
+
+        let time_remaining_player = if player_turn {
+            self.time_remaining_player - cost
         } else {
-            // Otherwise explore the child
-            let mut a = simplify(name.to_owned(), volcano, visited);
-            for (_, value) in a.iter_mut() {
-                *value += 1;
-            }
-            connections.append(&mut a);
+            self.time_remaining_player
+        };
+
+        let time_remaining_elephant = if !player_turn {
+            self.time_remaining_elephant - cost
+        } else {
+            self.time_remaining_elephant
+        };
+
+        let pos_player = if player_turn {
+            idx
+        } else {
+            self.pos_player
+        };
+        let pos_elephant = if !player_turn {
+            idx
+        } else {
+            self.pos_elephant
+        };
+
+        Self {
+            pos_player,
+            pos_elephant,
+            time_remaining_player,
+            time_remaining_elephant,
+            player_turn: !self.player_turn,
+            opened: self.opened | (1 << idx),
         }
     }
 
-    return connections;
-}
-
-fn find_best_old(root: String, volcano: &Volcano, opened: Vec<String>, time: i32) -> (i32, Vec<String>) {
-    let mut queue = VecDeque::new();
-    queue.push_back((State{name: root, time, opened}, 0));
-
-    let mut best = 0;
-    let mut best_opened = Vec::new();
-    let mut evaluated = HashSet::new();
-    loop {
-        // We are done now
-        if queue.is_empty() {
-            break;
+    fn get_pos(&self) -> usize {
+        if self.player_turn {
+            self.pos_player
+        } else {
+            self.pos_elephant
         }
-
-        let mut state = queue.pop_front().unwrap();
-
-        // Check if we have run out of time
-        if state.0.time <= 1 {
-            if state.1 > best {
-                best = state.1;
-                best_opened = state.0.opened;
-            }
-            continue;
-        }
-
-        if evaluated.contains(&state.0) {
-            continue;
-        }
-
-        let current_valve = volcano.valves.get(&state.0.name).unwrap();
-
-        // Two options:
-        // 1: Open valve [Only if current valve is not opened and has a
-        //    non-zero flowrate]
-        // 2: Move to other valve
-
-        // Option 1
-        if !state.0.opened.contains(&state.0.name) && current_valve.flowrate != 0 {
-            // Add the current valve to the list of opened valves
-            state.0.opened.push(state.0.name.clone());
-
-            let new_value = state.1 + (state.0.time-1) * current_valve.flowrate;
-            let ns = (State {name: state.0.name.to_owned(), time: state.0.time-1, opened: state.0.opened.clone()}, new_value);
-            queue.push_back(ns);
-
-            state.0.opened.pop();
-        }
-
-        // Option 2
-        for (connection, distance) in current_valve.connections.iter() {
-            let ns = (State {name: connection.to_owned(), time: state.0.time-distance, opened: state.0.opened.clone()}, state.1);
-            queue.push_back(ns);
-        }
-
-        evaluated.insert(State{name: state.0.name.to_owned(), time: state.0.time, opened: state.0.opened.clone()});
     }
 
-    return (best, best_opened);
+    fn get_pos_next(&self) -> usize {
+        if self.player_turn {
+            self.pos_elephant
+        } else {
+            self.pos_player
+        }
+    }
+
+    fn get_time_remaining(&self) -> i32 {
+        if self.player_turn {
+            self.time_remaining_player
+        } else {
+            self.time_remaining_elephant
+        }
+    }
+
+    fn is_open(&self, idx: usize) -> bool {
+        (self.opened >> idx) & 0x01 == 1
+    }
 }
 
 // -- Solution --
@@ -222,39 +347,11 @@ impl aoc::Solver for Day {
 
     fn part1(input: &str) -> Self::Output1 {
         let volcano = Volcano::from_str(input).unwrap();
-
-        let mut simplified_volcano = volcano.clone();
-        for (current, _) in volcano.valves.iter() {
-            let valve = simplified_volcano.valves.get_mut(current).unwrap();
-            valve.connections = simplify(current.to_owned(), &volcano, &mut HashSet::new());
-        }
-
-        let initial_state = State{ name: "AA".to_owned(), time: 30, opened: Vec::new() };
-        let mut cache = HashMap::new();
-
-        visit(initial_state, &simplified_volcano, &mut cache)
+        volcano.visit(StateSingle::new(30))
     }
 
     fn part2(input: &str) -> Self::Output2 {
         let volcano = Volcano::from_str(input).unwrap();
-        let mut simplified_volcano = volcano.clone();
-        for (current, _) in volcano.valves.iter() {
-            let valve = simplified_volcano.valves.get_mut(current).unwrap();
-            valve.connections = simplify(current.to_owned(), &volcano, &mut HashSet::new());
-        }
-
-        // This solution is very much a hack
-        // In the 26 minutes we can not turn on all the valves
-        // So the player tries to go for the best possible solution before running out of time
-        // The elephant will then look at the remaining valves and find the best remaing solution
-        // Problem with this solution is that it assumes we run out of time before opening all
-        // non-zero valves
-        // However this is not the case in the example, so it will actually fail the example
-        // @TODO Implement a proper solution that can also solve the example
-        let time = 26;
-        let player = find_best_old("AA".to_owned(), &simplified_volcano, Vec::new(), time);
-        let elephant = find_best_old("AA".to_owned(), &simplified_volcano, player.1, time);
-
-        player.0 + elephant.0
+        volcano.visit(StateDouble::new(26))
     }
 }
