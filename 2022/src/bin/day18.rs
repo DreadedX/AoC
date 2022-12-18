@@ -33,6 +33,10 @@ mod tests {
     fn part2_test2() -> Result<()> {
         Day::test(Day::part2, "test-2", 58)
     }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(Day::part2, "input", 2028)
+    }
 
     // Benchmarks
     extern crate test;
@@ -113,6 +117,53 @@ fn calculate_surface(cubes: HashSet<Vec3>) -> usize {
         }).sum()
 }
 
+struct Check(Vec<Vec<Vec<(bool, bool)>>>);
+
+impl Check {
+    fn new(size: &Vec3) -> Self {
+        Check(vec![vec![vec![(false, false); size.z as usize]; size.y as usize]; size.x as usize])
+    }
+    fn get_mut(&mut self, p: &Vec3) -> &mut (bool, bool) {
+        &mut self.0[p.x as usize][p.y as usize][p.z as usize]
+    }
+
+    fn get(&self, p: &Vec3) -> &(bool, bool) {
+        &self.0[p.x as usize][p.y as usize][p.z as usize]
+    }
+}
+
+
+fn fill(check: &mut Check, cubes: &HashSet<Vec3>, size: &Vec3, pos: Vec3) {
+    // Mark current space as air and checked
+    *check.get_mut(&pos) = (true, true); // (is_checked, is_air)
+
+    let offsets = offset();
+
+    for offset in offsets.iter() {
+        let next = &pos + offset;
+
+        // Check if the location is within bounds
+        if next.x < 0 || next.x >= size.x || next.y < 0 || next.y >= size.y || next.z < 0 || next.z >= size.z {
+            continue;
+        }
+
+        // Check if we have already checked the location
+        if check.get(&next).0 {
+            continue;
+        }
+
+        // Check if the space is filled with lava
+        if cubes.contains(&next) {
+            // Mark the space as checked and not containing air
+            *check.get_mut(&next) = (true, false);
+            continue;
+        }
+
+        // Explore the next location
+        fill(check, cubes, size, next);
+    }
+}
+
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
@@ -130,7 +181,7 @@ impl aoc::Solver for Day {
     }
 
     fn part2(input: &str) -> Self::Output2 {
-        let cubes = parse(input);
+        let mut cubes = parse(input);
 
         let size = cubes
             .iter()
@@ -142,106 +193,21 @@ impl aoc::Solver for Day {
                 return acc;
             });
 
-        let mut check = vec![vec![vec![[false; 6]; size.z as usize]; size.y as usize]; size.x as usize];
+        // (is_checked, is_air)
+        let mut check = Check::new(&size);
 
-        // Z+
-        for x in 0..size.x {
-            for y in 0..size.y {
-                if let Some(end) = (0..size.z)
-                    .position(|z| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for z in end..size.z as usize {
-                            check[x as usize][y as usize][z][0] = true;
-                        }
-                    }
-            }
-        }
-
-        // Z-
-        for x in 0..size.x {
-            for y in 0..size.y {
-                if let Some(end) = (0..size.z)
-                    .rev()
-                    .position(|z| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for z in 0..size.z as usize - end {
-                            check[x as usize][y as usize][z][1] = true;
-                        }
-                    }
-            }
-        }
-
-        // Y+
-        for z in 0..size.z {
-            for x in 0..size.x {
-                if let Some(end) = (0..size.y)
-                    .position(|y| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for y in end..size.y as usize {
-                            check[x as usize][y][z as usize][2] = true;
-                        }
-                    }
-            }
-        }
-
-        // Y-
-        for z in 0..size.z {
-            for x in 0..size.x {
-                if let Some(end) = (0..size.y)
-                    .rev()
-                    .position(|y| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for y in 0..size.y as usize - end {
-                            check[x as usize][y][z as usize][3] = true;
-                        }
-                    }
-            }
-        }
-
-        // X+
-        for y in 0..size.y {
-            for z in 0..size.z {
-                if let Some(end) = (0..size.x)
-                    .position(|x| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for x in end..size.x as usize {
-                            check[x][y as usize][z as usize][4] = true;
-                        }
-                    }
-            }
-        }
-
-        // X-
-        for y in 0..size.y {
-            for z in 0..size.z {
-                if let Some(end) = (0..size.x)
-                    .rev()
-                    .position(|x| {
-                        cubes.contains(&Vec3::new(x, y, z))
-                    }) {
-                        for x in 0..size.x as usize - end {
-                            check[x][y as usize][z as usize][5] = true;
-                        }
-                    }
-            }
-        }
-
-        let mut cubes = HashSet::new();
+        fill(&mut check, &cubes, &size, Vec3::new(0, 0, 0));
 
         for x in 0..size.x {
             for y in 0..size.y {
                 for z in 0..size.z {
-                    if check[x as usize][y as usize][z as usize].iter().all(|v| *v) {
+                    if !check.get(&Vec3::new(x, y, z)).1 {
                         cubes.insert(Vec3::new(x, y, z));
                     }
                 }
             }
         }
+
 
         calculate_surface(cubes)
     }
