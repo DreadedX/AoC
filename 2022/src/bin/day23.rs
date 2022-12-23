@@ -33,6 +33,10 @@ mod tests {
     fn part2_test2() -> Result<()> {
         Day::test(Day::part2, "test-2", 20)
     }
+    #[test]
+    fn part2_solution() -> Result<()> {
+        Day::test(Day::part2, "input", 995)
+    }
 
     // Benchmarks
     extern crate test;
@@ -67,12 +71,11 @@ impl Vec2 {
 #[derive(Debug, Copy, Clone)]
 struct Elf {
     considering: Vec2,
-    offset: usize,
 }
 
 impl Elf {
     fn new() -> Self {
-        Self { considering: Vec2::new(0, 0), offset: 0 }
+        Self { considering: Vec2::new(0, 0) }
     }
 }
 
@@ -80,6 +83,7 @@ impl Elf {
 struct Map {
     elves: HashMap<Vec2, Elf>,
     considered: HashMap<Vec2, usize>,
+    offset: usize,
 }
 
 impl FromStr for Map {
@@ -99,7 +103,7 @@ impl FromStr for Map {
                     })
             }).collect();
 
-        Ok(Self { elves, considered: HashMap::new()})
+        Ok(Self { elves, considered: HashMap::new(), offset: 0})
     }
 }
 
@@ -112,21 +116,18 @@ impl Map {
 
         let moves = [north, south, west, east];
 
-        for (pos, elf) in self.elves.clone() {
+        for pos in self.elves.clone().keys() {
             // Default action is to stay in place
-            let mut next = pos;
+            let mut next = *pos;
 
             if self.need_to_move(&pos) {
-                for m in moves.iter().cycle().skip(elf.offset).take(4) {
-                    if !self.occupied(pos.offset(&m.0[0])) && !self.occupied(pos.offset(&m.0[1])) && !self.occupied(pos.offset(&m.0[2])) {
+                for m in moves.iter().cycle().skip(self.offset).take(4) {
+                    if !self.elves.contains_key(&pos.offset(&m.0[0])) && !self.elves.contains_key(&pos.offset(&m.0[1])) && !self.elves.contains_key(&pos.offset(&m.0[2])) {
                         next = pos.offset(&m.1);
                         break;
                     }
                 }
             }
-
-            // The offset is updated every round for all elves
-            self.elves.get_mut(&pos).unwrap().offset += 1;
 
             // Set the position that the elf is considering
             self.elves.get_mut(&pos).unwrap().considering = next;
@@ -136,11 +137,8 @@ impl Map {
         }
     }
 
-    fn occupied(&self, pos: Vec2) -> bool {
-        self.elves.contains_key(&pos)
-    }
-
     fn need_to_move(&self, pos: &Vec2) -> bool {
+        // Check all the spaces around the elf to determine if we need to move
         for y in -1..2 {
             for x in -1..2 {
                 if x == 0 && y == 0 {
@@ -157,18 +155,18 @@ impl Map {
     }
 
     fn make_moves(&mut self) -> bool {
-        // New hashmap that is going to contain the updated values
         let mut elves = HashMap::new();
-
         let mut moved = false;
 
         for (pos, elf) in &self.elves {
+            // Check if the move is a valid move
             if *self.considered.get(&elf.considering).unwrap() == 1 {
+                // Check if the position of the elf has actually changed
                 if elf.considering.x != pos.x || elf.considering.y != pos.y {
                     moved = true;
                 }
-                // If only one elf is considering the new location, insert the elf into the new
-                // HashMap at the new location
+
+                // Insert the elf with the updated position
                 elves.insert(elf.considering, *elf);
             } else {
                 // Otherwise the elf will not move and stay at its old position
@@ -176,14 +174,14 @@ impl Map {
             }
         }
 
-        // Update the hashmap
         self.elves = elves;
-        // Clear the map tracking considered moves
         self.considered.clear();
+        self.offset += 1;
 
         return moved;
     }
 
+    // Gives the min and max of the smallest rectangle containing all the elves
     fn get_size(&self) -> (Vec2, Vec2) {
         let mut min = Vec2::new(isize::MAX, isize::MAX);
         let mut max = Vec2::new(0, 0);
@@ -199,25 +197,26 @@ impl Map {
         (min, max)
     }
 
+    // Calculate the amount of empty tiles in the smallest rectangle containing all the elves
     fn empty_tiles(&self) -> isize {
         let (min, max) = self.get_size();
         (max.x - min.x) * (max.y - min.y) - self.elves.len() as isize
     }
 
-    fn print(&self) {
-        let (min, max) = self.get_size();
-        for y in min.y..max.y {
-            for x in min.x..max.x {
-                if self.elves.contains_key(&Vec2::new(x, y)) {
-                    print!("#");
-                } else {
-                    print!(".");
-                }
-            }
-            println!("");
-        }
-        println!("");
-    }
+    // fn print(&self) {
+    //     let (min, max) = self.get_size();
+    //     for y in min.y..max.y {
+    //         for x in min.x..max.x {
+    //             if self.elves.contains_key(&Vec2::new(x, y)) {
+    //                 print!("#");
+    //             } else {
+    //                 print!(".");
+    //             }
+    //         }
+    //         println!("");
+    //     }
+    //     println!("");
+    // }
 }
 
 // -- Solution --
