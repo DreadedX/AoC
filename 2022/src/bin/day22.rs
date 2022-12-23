@@ -1,6 +1,5 @@
 #![feature(test)]
 use core::fmt;
-use std::rc::Rc;
 
 use anyhow::Result;
 use aoc::Solver;
@@ -48,7 +47,7 @@ mod tests {
 
 const PLANES: usize = 4;
 
-type Transform = Rc<Box<dyn 'static + Fn(Player) -> Player>>;
+type Transform = Box<dyn 'static + Fn(Player) -> Player>;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 enum Tile {
@@ -127,10 +126,9 @@ struct Player {
     direction: Direction,
 }
 
-#[derive(Clone)]
 struct Plane {
     grid: Vec<Vec<Tile>>,
-    neighbours: Vec<Option<(Vec2, Transform)>>,
+    neighbours: Vec<Option<Transform>>,
 }
 
 impl Plane {
@@ -154,7 +152,14 @@ struct Map {
 
 impl Map {
     fn new(input: &str, size: usize) -> Self {
-        let mut planes = vec![vec![None; PLANES]; PLANES];
+        let mut planes = Vec::with_capacity(PLANES);
+        for _ in 0..PLANES {
+            let mut temp = Vec::with_capacity(PLANES);
+            for _ in 0..PLANES {
+                temp.push(None);
+            }
+            planes.push(temp);
+        }
 
         input
             .lines()
@@ -221,7 +226,7 @@ impl Map {
         }
     }
 
-    fn get_neighbour(&self, plane: &Vec2, direction: &Direction) -> &(Vec2, Transform) {
+    fn get_neighbour(&self, plane: &Vec2, direction: &Direction) -> &Transform {
         // Get the position of the neighbour
         let plane = self.planes[plane.y][plane.x].as_ref().unwrap();
         plane.neighbours[usize::from(direction)].as_ref().unwrap()
@@ -239,12 +244,9 @@ impl Map {
 
                     // We walk out of the current plane
                     if np.position.x >= self.size {
-                        // Get the position of the neighbour
-                        let neighbour = self.get_neighbour(&np.plane, &np.direction);
-                        np.plane = neighbour.0;
-
-                        // Apply the correct transform to the player position
-                        np = neighbour.1(np);
+                        // Apply the correct transform to the move the player to the right location
+                        let transform = self.get_neighbour(&np.plane, &np.direction);
+                        np = transform(np);
                     }
                 },
                 Direction::Left => {
@@ -253,12 +255,9 @@ impl Map {
 
                     // We walk out of the current plane
                     if temp < 0 {
-                        // Get the position of the neighbour
-                        let neighbour = self.get_neighbour(&np.plane, &np.direction);
-                        np.plane = neighbour.0;
-
-                        // Apply the correct transform to the player position
-                        np = neighbour.1(np);
+                        // Apply the correct transform to the move the player to the right location
+                        let transform = self.get_neighbour(&np.plane, &np.direction);
+                        np = transform(np);
                     } else {
                         np.position.x -= 1;
                     }
@@ -270,12 +269,9 @@ impl Map {
 
                     // We walk out of the current plane
                     if np.position.y >= self.size {
-                        // Get the position of the neighbour
-                        let neighbour = self.get_neighbour(&np.plane, &np.direction);
-                        np.plane = neighbour.0;
-
-                        // Apply the correct transform to the player position
-                        np = neighbour.1(np);
+                        // Apply the correct transform to the move the player to the right location
+                        let transform = self.get_neighbour(&np.plane, &np.direction);
+                        np = transform(np);
                     }
                 },
                 Direction::Up => {
@@ -284,12 +280,9 @@ impl Map {
 
                     // We walk out of the current plane
                     if temp < 0 {
-                        // Get the position of the neighbour
-                        let neighbour = self.get_neighbour(&np.plane, &np.direction);
-                        np.plane = neighbour.0;
-
-                        // Apply the correct transform to the player position
-                        np = neighbour.1(np);
+                        // Apply the correct transform to the move the player to the right location
+                        let transform = self.get_neighbour(&np.plane, &np.direction);
+                        np = transform(np);
                     } else {
                         np.position.y -= 1;
                     }
@@ -324,38 +317,41 @@ impl Map {
                     // Check up neighbour
                     {
                         let y_neighbour = (0..PLANES).rev().cycle().skip(PLANES-y).take(PLANES).find(|y| self.planes[*y][x].is_some()).unwrap();
-                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(x, y_neighbour), Rc::new(Box::new(move |mut p: Player| {
+                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                            p.plane = Vec2::new(x, y_neighbour);
                             p.position.y = size-1;
                             return p;
-                        }))));
+                        }));
                     }
 
                     // Check down neighbour
                     {
                         let y_neighbour = (0..PLANES).cycle().skip(y+1).take(PLANES).find(|y| self.planes[*y][x].is_some()).unwrap();
-                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(x, y_neighbour), Rc::new(Box::new(move |mut p: Player| {
+                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                            p.plane = Vec2::new(x, y_neighbour);
                             p.position.y = 0;
                             return p;
-                        }))));
+                        }));
                     }
 
                     // Check left neighbour
                     {
                         let x_neighbour = (0..PLANES).rev().cycle().skip(PLANES-x).take(PLANES).find(|x| self.planes[y][*x].is_some()).unwrap();
-                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(x_neighbour, y), Rc::new(Box::new(move |mut p: Player| {
+                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                            p.plane = Vec2::new(x_neighbour, y);
                             p.position.x = size-1;
                             return p;
-                        }))));
+                        }));
                     }
 
                     // Check right neighbour
                     {
                         let x_neighbour = (0..PLANES).cycle().skip(x+1).take(PLANES).find(|x| self.planes[y][*x].is_some()).unwrap();
-                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(x_neighbour, y), Rc::new(Box::new(move |mut p: Player| {
-                            // This happens post move
+                        self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                            p.plane = Vec2::new(x_neighbour, y);
                             p.position.x = 0;
                             return p;
-                        }))));
+                        }));
                     }
                 }
             }
@@ -368,194 +364,217 @@ impl Map {
         let size = self.size;
         {
             let (x, y) = (2, 0);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(0, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 1);
                 p.position.x = size - p.position.x - 1;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.x = p.position.y;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(2, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 1);
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(3, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(3, 2);
                 p.position.y = size - p.position.y - 1;
                 p.position.y = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
-
+            }));
         }
 
         {
             let (x, y) = (0, 1);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.x = size - p.position.x - 1;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(3, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(3, 2);
                 p.position.x = size - p.position.y - 1;
                 p.position.y = size-1;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(2, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 2);
                 p.position.x = size - p.position.x - 1;
                 p.position.y = size-1;
                 p.direction = Direction::Up;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.x = 0;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (1, 1);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.y = p.position.x;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(0, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 1);
                 p.position.x = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(2, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 2);
                 p.position.y = size - p.position.x - 1;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(2, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 1);
                 p.position.x = 0;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (2, 1);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.x = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(2, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 2);
                 p.position.y = 0;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(3, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(3, 2);
                 p.position.x = size - p.position.y - 1;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (2, 2);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(2, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 1);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.x = size - p.position.y - 1;
                 p.position.y = size-1;
                 p.direction = Direction::Up;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(0, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 1);
                 p.position.x = size - p.position.x - 1;
                 p.position.y = size-1;
                 p.direction = Direction::Up;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(3, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(3, 2);
                 p.position.x = 0;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (3, 2);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(2, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 1);
                 p.position.y = size - p.position.x - 1;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(2, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 2);
                 p.position.x = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(0, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 1);
                 p.position.y = size - p.position.x - 1;
                 p.position.x = 0;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.y = size - p.position.y - 1;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
         }
     }
 
@@ -567,188 +586,212 @@ impl Map {
         let size = self.size;
         {
             let (x, y) = (1, 0);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(0, 3), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 3);
                 p.position.y = p.position.x;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(0, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 2);
                 p.position.y = size - p.position.y - 1;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.y = 0;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.x = 0;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (2, 0);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(0, 3), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 3);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 0);
                 p.position.x = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.y = p.position.x;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(1, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 2);
                 p.position.y = size - p.position.y - 1;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (1, 1);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(1, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 0);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(0, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 2);
                 p.position.x = p.position.y;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(1, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 2);
                 p.position.y = 0;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.x = p.position.y;
                 p.position.y = size-1;
                 p.direction = Direction::Up;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (0, 2);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.y = p.position.x;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 0);
                 p.position.y = size - p.position.x - 1;
                 p.position.x = 0;
                 p.direction = Direction::Right;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(0, 3), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 3);
                 p.position.y = 0;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(1, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 2);
                 p.position.x = 0;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (1, 2);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(1, 1), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 1);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(0, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 2);
                 p.position.x = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(0, 3), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 3);
                 p.position.y = p.position.x;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.y = size - p.position.y - 1;
                 p.position.x = size-1;
                 p.direction = Direction::Left;
 
                 return p;
-            }))));
+            }));
         }
 
         {
             let (x, y) = (0, 3);
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some((Vec2::new(0, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Up)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(0, 2);
                 p.position.y = size-1;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some((Vec2::new(1, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Left)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 0);
                 p.position.x = p.position.y;
                 p.position.y = 0;
                 p.direction = Direction::Down;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some((Vec2::new(2, 0), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Down)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(2, 0);
                 p.position.y = 0;
 
                 return p;
-            }))));
+            }));
 
-            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some((Vec2::new(1, 2), Rc::new(Box::new(move |mut p: Player| {
+            self.planes[y][x].as_mut().unwrap().neighbours[usize::from(&Direction::Right)] = Some(Box::new(move |mut p: Player| {
+                p.plane = Vec2::new(1, 2);
                 p.position.x = p.position.y;
                 p.position.y = size-1;
                 p.direction = Direction::Up;
 
                 return p;
-            }))));
+            }));
         }
     }
 }
