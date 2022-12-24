@@ -101,6 +101,16 @@ impl Map {
         ];
 
         while queue.len() > 0 {
+            // Pretty sure this is basically A*?
+            // Not 100% sure if it actually works correctly, but it works correctly for my input ¯\_(ツ)_/¯
+            queue.make_contiguous().sort_by(|a, b| {
+                let distance_a = (a.position.x - end.x).abs() + (a.position.y - end.y).abs() + a.time_passed as isize;
+                let distance_b = (b.position.x - end.x).abs() + (b.position.y - end.y).abs() + b.time_passed as isize;
+
+                distance_a.cmp(&distance_b)
+            });
+
+            // Instead we should pick the entry that is the closest to our target first
             let current = queue.pop_front().unwrap();
 
             // Check every neighbour
