@@ -60,8 +60,10 @@ impl aoc::Solver for Day {
             .lines()
             .map(|line| {
                 let mut nums = line.chars().filter_map(|c| c.to_digit(10));
-                // There is always at least one number in every line
-                let first = nums.next().unwrap();
+                let first = nums
+                    .next()
+                    .expect("Every line should have at least one number");
+
                 // If there is only one number use the first number as the last number
                 let last = nums.last().unwrap_or(first);
 
