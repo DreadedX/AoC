@@ -10,6 +10,7 @@ sed -e "s/DAY/$day/g" -e "s/TYPE/$type/" -e "s/DEFAULT/$default/" -e "s/TEST/$te
 echo "Downloading input..."
 source ../.env
 mkdir -p input/$1
-curl -s "https://adventofcode.com/2023/day/$1/input" -H "Cookie: session=${SESSION}" > input/$1/input
+day=$(echo $1 | sed 's/^0*//')
+curl -s "https://adventofcode.com/2023/day/$day/input" -H "Cookie: session=${SESSION}" > input/$1/input
 
 echo "Done!"
