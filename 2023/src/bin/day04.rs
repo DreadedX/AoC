@@ -91,44 +91,38 @@ impl aoc::Solver for Day {
     }
 
     fn part2(input: &str) -> Self::Output2 {
-        // Calculate how many wins we have per game
-        let wins: Vec<_> = input
-            .lines()
-            .map(|line| {
-                // Get rid of the first part
-                let (_, line) = line
-                    .split_once(": ")
-                    .expect("Input should be formatted properly");
-
-                // Seperate the winning numbers and numbers we have
-                let (winning, numbers) = line
-                    .split_once(" | ")
-                    .expect("Input should be formatted properly");
-
-                // Parse the winning numbers
-                let winning: Vec<_> = winning.split(' ').flat_map(str::parse::<usize>).collect();
-                // Parse the numbers we have, check if they are a winning number and count the
-                // amount of winning numbers we have
-                numbers
-                    .split(' ')
-                    .flat_map(str::parse::<usize>)
-                    .filter(|num| winning.contains(num))
-                    .count()
-            })
-            .collect();
-
         // Start out with one copy of every card
-        let mut copies = vec![1; wins.len()];
+        let mut copies = vec![1; input.lines().count()];
 
-        // Keep track of how many copies we get of every card
-        for (i, win) in wins.iter().enumerate() {
-            for j in (i + 1)..(i + win + 1) {
-                // Add the current amount of copies to the card we win
+        input.lines().enumerate().for_each(|(i, line)| {
+            // Get rid of the first part
+            let (_, line) = line
+                .split_once(": ")
+                .expect("Input should be formatted properly");
+
+            // Seperate the winning numbers and numbers we have
+            let (winning, numbers) = line
+                .split_once(" | ")
+                .expect("Input should be formatted properly");
+
+            // Parse the winning numbers
+            let winning: Vec<_> = winning.split(' ').flat_map(str::parse::<usize>).collect();
+            // Parse the numbers we have, check if they are a winning number and count the
+            // amount of winning numbers we have
+            let wins = numbers
+                .split(' ')
+                .flat_map(str::parse::<usize>)
+                .filter(|num| winning.contains(num))
+                .count();
+
+            // Increment the amount that we have of the cards that we win by the number we have of
+            // the current card
+            for j in (i + 1)..(i + wins + 1) {
                 // e.g. we have 2 copies of the current card that has 3 wins, this means we add 2
                 // to the next 3 cards
                 copies[j] += copies[i]
             }
-        }
+        });
 
         copies.iter().sum()
     }
