@@ -88,7 +88,7 @@ impl aoc::Solver for Day {
 
                 // If valid, get the id and add it to the sum
                 if valid {
-                    let (_, id) = game.split_once(' ').unwrap();
+                    let id = game.split_once(' ').unwrap().1;
                     let id: usize = id.parse().unwrap();
                     Some(id)
                 } else {
@@ -107,7 +107,7 @@ impl aoc::Solver for Day {
             .lines()
             .map(|line| {
                 // Split the game id from the actual game played
-                let (_, line) = line.split_once(": ").unwrap();
+                let line = line.split_once(": ").unwrap().1;
 
                 // Get the required minimum amount for each color
                 let required = line.split(", ").fold((0, 0, 0), |acc, entry| {

@@ -61,9 +61,10 @@ impl aoc::Solver for Day {
             .lines()
             .map(|line| {
                 // Get rid of the first part
-                let (_, line) = line
+                let line = line
                     .split_once(": ")
-                    .expect("Input should be formatted properly");
+                    .expect("Input should be formatted properly")
+                    .1;
 
                 // Seperate the winning numbers and numbers we have
                 let (winning, numbers) = line
@@ -96,9 +97,10 @@ impl aoc::Solver for Day {
 
         input.lines().enumerate().for_each(|(i, line)| {
             // Get rid of the first part
-            let (_, line) = line
+            let line = line
                 .split_once(": ")
-                .expect("Input should be formatted properly");
+                .expect("Input should be formatted properly")
+                .1;
 
             // Seperate the winning numbers and numbers we have
             let (winning, numbers) = line
