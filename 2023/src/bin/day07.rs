@@ -1,7 +1,5 @@
 #![feature(test)]
 
-use std::cmp::max;
-
 use anyhow::Result;
 use aoc::Solver;
 
@@ -49,7 +47,7 @@ mod tests {
 }
 
 // Assign each card a value
-fn card_value(card: &char, part2: bool) -> i32 {
+fn card_value(card: &char, part2: bool) -> u64 {
     match card {
         '2' => 2,
         '3' => 3,
@@ -74,84 +72,87 @@ fn card_value(card: &char, part2: bool) -> i32 {
     }
 }
 
-fn hand_value(cards: &[i32], part2: bool) -> usize {
-    if part2 {
-        (2..=14)
-            .map(|joker| {
-                (2..=14)
-                    .map(|index| {
-                        // Count how many we have of that card, after replacing the joker
-                        let count = cards
-                            .iter()
-                            .map(|card| if *card == 1 { joker } else { *card })
-                            .filter(|card| *card == index)
-                            .count();
+fn hand_value(cards: &[u64], part2: bool) -> u64 {
+    // Partition the base into segments of four bits, where the first four represent the value of
+    // the right most card, the next four bits the second card from the right, etc
+    let base: u64 = cards
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(index, card)| card << (index * 4))
+        .sum();
 
-                        // Partition a number into segments of 3 bits
-                        // First three bits is amount of high cards, seconds is the amount of pairs, etc
-                        // This should rank all cards based on type (ties still need to be resolved)
-                        1 << (count * 3)
-                    })
-                    .sum()
-            })
-            .max()
+    // Count how many of each card we have
+    let mut counts: Vec<_> = (1..=14)
+        .map(|index| cards.iter().filter(|card| **card == index).count())
+        .collect();
+
+    if part2 {
+        // Find of which card we have the most
+        let index_most = counts
+            .iter()
+            .enumerate()
+            .skip(1)
+            .max_by_key(|(_, count)| **count)
             .unwrap()
-    } else {
-        // Loop over all possible cards
-        (2..=14)
-            .map(|index| {
-                // Count how many we have of that card
-                let count = cards.iter().filter(|card| **card == index).count();
-                // Partition a number into segments of 3 bits
-                // First three bits is amount of high cards, seconds is the amount of pairs, etc
-                // This should rank all cards based on type (ties still need to be resolved)
-                1 << (count * 3)
-            })
-            .sum()
-    }
+            .0;
+
+        // Add the jokes to that count
+        counts[index_most] += counts[0];
+        counts[0] = 0;
+    };
+
+    // Partition the rank into segments of 3 bits, lowest three bits is amount of single cards,
+    // next three bits is amount of pairs, etc
+    let rank: u64 = counts
+        .iter()
+        .map(|count| {
+            if *count > 0 {
+                1 << ((count - 1) * 3)
+            } else {
+                0
+            }
+        })
+        .sum();
+
+    // Shift over the rank and add the base two it
+    // Sorting by this number should rank all the cards according to the rules
+    (rank << (5 * 4)) + base
 }
 
-fn solve(input: &str, part2: bool) -> usize {
+fn solve(input: &str, part2: bool) -> u64 {
+    // Parse each hand
     let mut hands: Vec<_> = input
         .lines()
         .map(|line| {
             // Parse each line
             let (cards, bid) = line.split_once(' ').unwrap();
             let cards: Vec<_> = cards.chars().map(|card| card_value(&card, part2)).collect();
-            let bid: usize = bid.parse().unwrap();
+            let bid: u64 = bid.parse().unwrap();
 
             // Calculate the value of the hand
-            let score = hand_value(&cards, part2);
+            let value = hand_value(&cards, part2);
 
-            (score, cards, bid)
+            (value, bid)
         })
         .collect();
 
     // Sort all the hands
-    hands.sort_by(|a, b| {
-        // Check if the score are equal
-        if a.0 == b.0 {
-            // If they are, sort by the card values
-            a.1.cmp(&b.1)
-        } else {
-            // Otherwise sort by score
-            a.0.cmp(&b.0)
-        }
-    });
+    hands.sort_by(|a, b| a.0.cmp(&b.0));
 
     // Calculate the total winnings
     hands
         .iter()
         .enumerate()
-        .map(|(index, (_, _, bid))| bid * (index + 1))
+        .map(|(index, (_, bid))| bid * (index as u64 + 1))
         .sum()
 }
 
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
-    type Output1 = usize;
-    type Output2 = usize;
+    type Output1 = u64;
+    type Output2 = u64;
 
     fn day() -> u8 {
         7
