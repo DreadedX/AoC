@@ -154,8 +154,13 @@ fn count_valid(
                 a + b
             }
             Spring::Damaged => {
-                // Add to the damaged chain
-                count_valid(&mut springs[1..], list, damaged_chain+1, cache)
+                if damaged_chain + 1 > list[0] {
+                    // The chain is to long
+                    0
+                } else {
+                    // Add to the damaged chain
+                    count_valid(&mut springs[1..], list, damaged_chain + 1, cache)
+                }
             }
         }
     };
