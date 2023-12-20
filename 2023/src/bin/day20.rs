@@ -89,6 +89,24 @@ struct Pulse<'a> {
     high: bool,
 }
 
+// Copied from day 8
+fn gcd(a: usize, b: usize) -> usize {
+    if b == 0 {
+        return a;
+    }
+
+    gcd(b, a % b)
+}
+
+// Copied from day 8
+fn lcm(a: usize, b: usize) -> usize {
+    if a > b {
+        (a / gcd(a, b)) * b
+    } else {
+        (b / gcd(a, b)) * a
+    }
+}
+
 // -- Solution --
 pub struct Day;
 impl aoc::Solver for Day {
@@ -215,6 +233,7 @@ impl aoc::Solver for Day {
 
         let final_name = r#final.0.to_owned();
         let final_module = r#final.1.clone();
+        let mut frequencies = HashMap::new();
 
         println!("{final_name}: {final_module:?}");
 
@@ -229,9 +248,12 @@ impl aoc::Solver for Day {
             while let Some(pulse) = pulses.pop_front() {
                 if let Some(module) = modules.get_mut(pulse.destination) {
                     if pulse.destination == final_name && pulse.high {
-                        // TODO: Instead of printing this, keep track of it
-                        // Once all inputs have received a pulse calculate the LCM and output that
-                        println!("{} high after {} presses", pulse.source, i + 1);
+                        frequencies.insert(pulse.source, i + 1);
+                        if let ModuleType::Conjunction(ref inputs) = final_module.module_type {
+                            if frequencies.len() == inputs.len() {
+                                return frequencies.values().copied().fold(1, lcm);
+                            }
+                        }
                     }
 
                     if let Some(high) = module.process(pulse.source, pulse.high) {
@@ -247,6 +269,6 @@ impl aoc::Solver for Day {
             }
         }
 
-        0
+        unreachable!("No solution found");
     }
 }
