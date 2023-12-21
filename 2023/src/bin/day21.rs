@@ -27,7 +27,7 @@ mod tests {
 
     #[test]
     fn part2_test1() -> Result<()> {
-        Day::test(Day::part2, "test-1", 1)
+        Day::test(Day::part2, "test-1", 154)
     }
 
     // Benchmarks
@@ -113,8 +113,21 @@ impl aoc::Solver for Day {
     fn part2(input: &str) -> Self::Output2 {
         let height = input.lines().count();
         let width = input.lines().next().unwrap().chars().count();
+        println!("{width}, {height}");
+        // Map is square: 131 x 131
+        // !!! Others have observed 26501365 = 202300 * 131 + 65 !!!
+        // Is there a pattern for i * 131 + 65?
+        // i = 0 => 3776
+        // i = 1 => 33652
+        // i = 2 => 93270
+        // Is there a function of i that can fit to this?
+        // Yes => Quadratic equation will fit this
+        //      3642 - 14737 x + 14871 x^2
+        // i = 202300 => 608603023105276
+        // Could not have done this without a hint from Reddit...
+        const N: usize = 2 * 131 + 65;
 
-        let mut queue = Vec::new();
+        let mut queue = VecDeque::new();
         let map: HashMap<(isize, isize), char> = input
             .lines()
             .enumerate()
@@ -123,7 +136,7 @@ impl aoc::Solver for Day {
                     .enumerate()
                     .map(|(x, mut c)| {
                         if c == 'S' {
-                            queue.push(((x as isize, y as isize), 500));
+                            queue.push_back(((x as isize, y as isize), 0));
                             c = '.';
                         }
 
@@ -136,7 +149,7 @@ impl aoc::Solver for Day {
         let mut visited = HashSet::new();
         let directions = [(-1, 0), (1, 0), (0, -1), (0, 1)];
         // Depth first
-        while let Some(step) = queue.pop() {
+        while let Some(step) = queue.pop_front() {
             // If we have already evaluated this state, do not add it to the queue
             if visited.contains(&step) {
                 continue;
@@ -146,7 +159,7 @@ impl aoc::Solver for Day {
             visited.insert(step);
 
             // Check if we have ran out of steps
-            if step.1 == 0 {
+            if step.1 == N {
                 continue;
             }
 
@@ -154,7 +167,7 @@ impl aoc::Solver for Day {
             for direction in directions {
                 let next = (
                     (step.0 .0 + direction.0, step.0 .1 + direction.1),
-                    step.1 - 1,
+                    step.1 + 1,
                 );
 
                 let next_wrapped = (
@@ -165,12 +178,12 @@ impl aoc::Solver for Day {
                 // If the tile is free add it to the queue
                 if let Some(&tile) = map.get(&next_wrapped) {
                     if tile == '.' {
-                        queue.push(next);
+                        queue.push_back(next);
                     }
                 }
             }
         }
 
-        visited.iter().filter(|step| step.1 == 0).count()
+        visited.iter().filter(|step| step.1 == N).count()
     }
 }
