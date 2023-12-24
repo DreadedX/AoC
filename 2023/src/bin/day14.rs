@@ -1,6 +1,10 @@
 #![feature(test)]
 
-use std::{fmt::Display, collections::{hash_map::DefaultHasher, HashMap}, hash::{Hash, Hasher}};
+use std::{
+    collections::{hash_map::DefaultHasher, HashMap},
+    fmt::Display,
+    hash::{Hash, Hasher},
+};
 
 use anyhow::Result;
 use aoc::Solver;
@@ -116,7 +120,7 @@ fn tilt_east(grid: &mut [Vec<Space>]) {
         for line in grid.iter_mut() {
             if line[x] == Space::Round {
                 let mut new_x = x;
-                for (xx, space) in line.iter().enumerate().skip(x+1) {
+                for (xx, space) in line.iter().enumerate().skip(x + 1) {
                     if space == &Space::Empty {
                         new_x = xx
                     } else {
@@ -140,7 +144,7 @@ fn tilt_south(grid: &mut Vec<Vec<Space>>) {
         for x in 0..width {
             if grid[y][x] == Space::Round {
                 let mut new_y = y;
-                for (yy, line) in grid.iter().enumerate().skip(y+1) {
+                for (yy, line) in grid.iter().enumerate().skip(y + 1) {
                     if line[x] == Space::Empty {
                         new_y = yy
                     } else {

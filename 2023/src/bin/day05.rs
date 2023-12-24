@@ -1,9 +1,6 @@
 #![feature(iter_map_windows)]
 #![feature(test)]
-use std::{
-    cmp::max,
-    collections::VecDeque,
-};
+use std::{cmp::max, collections::VecDeque};
 
 use anyhow::Result;
 use aoc::Solver;

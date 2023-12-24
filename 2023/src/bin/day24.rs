@@ -1,10 +1,10 @@
 #![feature(test)]
 extern crate nalgebra as na;
-use std::{str::FromStr, convert::Infallible, collections::HashMap};
+use std::{collections::HashMap, convert::Infallible, str::FromStr};
 
 use anyhow::Result;
 use aoc::Solver;
-use na::{SMatrix, SVector};
+use na::{Matrix6, Vector6};
 
 // -- Runners --
 fn main() -> Result<()> {
@@ -56,18 +56,18 @@ struct Hailstone {
     pz: f64,
     vx: f64,
     vy: f64,
-    vz: f64
+    vz: f64,
 }
 
 impl Hailstone {
-        fn intersect_2d(&self, other: &Hailstone) -> Option<(f64, f64)> {
+    fn intersect_2d(&self, other: &Hailstone) -> Option<(f64, f64)> {
         let dx = self.px - other.px;
         let dy = self.py - other.py;
 
         let d = self.vy * other.vx - self.vx * other.vy;
 
-        let t1 = (other.vy*dx - other.vx * dy) / d;
-        let t2 = (self.vy * dx - self.vx*dy) / d;
+        let t1 = (other.vy * dx - other.vx * dy) / d;
+        let t2 = (self.vy * dx - self.vx * dy) / d;
 
         if t1.is_sign_negative() || t2.is_sign_negative() {
             // Intersection is in the past
@@ -90,7 +90,10 @@ impl FromStr for Hailstone {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<f64> = s.split([',', '@']).map(|part| part.trim().parse().unwrap()).collect();
+        let parts: Vec<f64> = s
+            .split([',', '@'])
+            .map(|part| part.trim().parse().unwrap())
+            .collect();
 
         Ok(Hailstone {
             px: parts[0],
@@ -112,7 +115,11 @@ fn mode(numbers: &[usize]) -> usize {
 
     println!("{occurrences:?}");
 
-    occurrences.into_iter().max_by_key(|&(_, count)| count).map(|(value, _)| value).unwrap()
+    occurrences
+        .into_iter()
+        .max_by_key(|&(_, count)| count)
+        .map(|(value, _)| value)
+        .unwrap()
 }
 
 // -- Solution --
@@ -134,11 +141,19 @@ impl aoc::Solver for Day {
             200000000000000.0..=400000000000000.0
         };
 
-        hailstones.iter().enumerate().flat_map(|(index_a, a)| {
-            hailstones.iter().enumerate().filter(|(index_b, _)| index_b < &index_a).filter_map(|(_, b)| {
-                a.intersect_2d(b)
-            }).collect::<Vec<_>>()
-        }).filter(|&(x, y)| range.contains(&x) && range.contains(&y)).count()
+        hailstones
+            .iter()
+            .enumerate()
+            .flat_map(|(index_a, a)| {
+                hailstones
+                    .iter()
+                    .enumerate()
+                    .filter(|(index_b, _)| index_b < &index_a)
+                    .filter_map(|(_, b)| a.intersect_2d(b))
+                    .collect::<Vec<_>>()
+            })
+            .filter(|&(x, y)| range.contains(&x) && range.contains(&y))
+            .count()
     }
 
     fn part2(input: &str) -> Self::Output2 {
@@ -168,52 +183,57 @@ impl aoc::Solver for Day {
         let j = 1;
         // Due to numerical instability we run this with several different options for the third
         // hailstone
-        let solutions: Vec<_> = (2..h.len()).map(|k| {
-            // Constant in the matrix
-            let c1 = h[i].vz - h[j].vz;
-            let c2 = h[i].py - h[j].py;
-            let c3 = h[j].vy - h[i].vy;
-            let c4 = h[j].pz - h[i].pz;
-            let c5 = h[i].vx - h[j].vx;
-            let c6 = h[j].px - h[i].px;
+        let solutions: Vec<_> = (2..h.len())
+            .map(|k| {
+                // Constant in the matrix
+                let c1 = h[i].vz - h[j].vz;
+                let c2 = h[i].py - h[j].py;
+                let c3 = h[j].vy - h[i].vy;
+                let c4 = h[j].pz - h[i].pz;
+                let c5 = h[i].vx - h[j].vx;
+                let c6 = h[j].px - h[i].px;
 
-            let c7 = h[i].vz - h[k].vz;
-            let c8 = h[i].py - h[k].py;
-            let c9 = h[k].vy - h[i].vy;
-            let c10 = h[k].pz - h[i].pz;
-            let c11 = h[i].vx - h[k].vx;
-            let c12 = h[k].px - h[i].px;
+                let c7 = h[i].vz - h[k].vz;
+                let c8 = h[i].py - h[k].py;
+                let c9 = h[k].vy - h[i].vy;
+                let c10 = h[k].pz - h[i].pz;
+                let c11 = h[i].vx - h[k].vx;
+                let c12 = h[k].px - h[i].px;
 
-            // Setup the matrix
-            let matrix = SMatrix::<f64, 6, 6>::new(
-                0.0, c1, c3, 0.0, c4, c2,
-                -c1, 0.0, c5, -c4, 0.0, c6,
-                -c3, -c5, 0.0, -c2, -c6, 0.0,
-                0.0, c7, c9, 0.0, c10, c8,
-                -c7, 0.0, c11, -c10, 0.0, c12,
-                -c9, -c11, 0.0, -c8, -c12, 0.0
-            );
+                // Setup the matrix
+                let matrix = Matrix6::new(
+                    0.0, c1, c3, 0.0, c4, c2, -c1, 0.0, c5, -c4, 0.0, c6, -c3, -c5, 0.0, -c2, -c6,
+                    0.0, 0.0, c7, c9, 0.0, c10, c8, -c7, 0.0, c11, -c10, 0.0, c12, -c9, -c11, 0.0,
+                    -c8, -c12, 0.0,
+                );
 
-            // Get the inverse of the matrix
-            let inverse = matrix.try_inverse().unwrap();
+                // Get the inverse of the matrix
+                let inverse = matrix.try_inverse().unwrap();
 
-            // Constant on the rhs
-            let k1 = h[i].py*h[i].vz - h[j].py*h[j].vz + h[j].pz*h[j].vy - h[i].pz*h[i].vy;
-            let k2 = h[i].pz*h[i].vx - h[j].pz*h[j].vx + h[j].px*h[j].vz - h[i].px*h[i].vz;
-            let k3 = h[i].px*h[i].vy - h[j].px*h[j].vy + h[j].py*h[j].vx - h[i].py*h[i].vx;
-            let k4 = h[i].py*h[i].vz - h[k].py*h[k].vz + h[k].pz*h[k].vy - h[i].pz*h[i].vy;
-            let k5 = h[i].pz*h[i].vx - h[k].pz*h[k].vx + h[k].px*h[k].vz - h[i].px*h[i].vz;
-            let k6 = h[i].px*h[i].vy - h[k].px*h[k].vy + h[k].py*h[k].vx - h[i].py*h[i].vx;
+                // Constant on the rhs
+                let k1 =
+                    h[i].py * h[i].vz - h[j].py * h[j].vz + h[j].pz * h[j].vy - h[i].pz * h[i].vy;
+                let k2 =
+                    h[i].pz * h[i].vx - h[j].pz * h[j].vx + h[j].px * h[j].vz - h[i].px * h[i].vz;
+                let k3 =
+                    h[i].px * h[i].vy - h[j].px * h[j].vy + h[j].py * h[j].vx - h[i].py * h[i].vx;
+                let k4 =
+                    h[i].py * h[i].vz - h[k].py * h[k].vz + h[k].pz * h[k].vy - h[i].pz * h[i].vy;
+                let k5 =
+                    h[i].pz * h[i].vx - h[k].pz * h[k].vx + h[k].px * h[k].vz - h[i].px * h[i].vz;
+                let k6 =
+                    h[i].px * h[i].vy - h[k].px * h[k].vy + h[k].py * h[k].vx - h[i].py * h[i].vx;
 
-            // Put them into a vector
-            let k = SVector::<f64, 6>::new(k1, k2, k3, k4, k5, k6);
+                // Put them into a vector
+                let k = Vector6::new(k1, k2, k3, k4, k5, k6);
 
-            // Calclate the solution
-            let solution = inverse * k;
+                // Calclate the solution
+                let solution = inverse * k;
 
-            // The sum of all elements of the starting position is the answer
-            (solution[0] + solution[1] + solution[2]).round() as usize
-        }).collect();
+                // The sum of all elements of the starting position is the answer
+                (solution[0] + solution[1] + solution[2]).round() as usize
+            })
+            .collect();
 
         // The most common solution is the actual solution
         mode(&solutions)
