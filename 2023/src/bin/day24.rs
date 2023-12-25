@@ -113,8 +113,6 @@ fn mode(numbers: &[usize]) -> usize {
         *occurrences.entry(value).or_insert(0) += 1;
     }
 
-    println!("{occurrences:?}");
-
     occurrences
         .into_iter()
         .max_by_key(|&(_, count)| count)
@@ -207,9 +205,6 @@ impl aoc::Solver for Day {
                     -c8, -c12, 0.0,
                 );
 
-                // Get the inverse of the matrix
-                let inverse = matrix.try_inverse().unwrap();
-
                 // Constant on the rhs
                 let k1 =
                     h[i].py * h[i].vz - h[j].py * h[j].vz + h[j].pz * h[j].vy - h[i].pz * h[i].vy;
@@ -227,8 +222,7 @@ impl aoc::Solver for Day {
                 // Put them into a vector
                 let k = Vector6::new(k1, k2, k3, k4, k5, k6);
 
-                // Calclate the solution
-                let solution = inverse * k;
+                let solution = matrix.lu().solve(&k).unwrap();
 
                 // The sum of all elements of the starting position is the answer
                 (solution[0] + solution[1] + solution[2]).round() as usize
